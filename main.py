@@ -26,7 +26,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     FastAPICache.init(backend, prefix="api:cache")
 
-    init_db()
+    await init_db()
     init_scheduler()
 
     yield

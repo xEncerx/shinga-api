@@ -34,7 +34,7 @@ async def login_access_token(
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = crud.authenticate(
+    user = await crud.authenticate(
         session=session,
         username=form_data.username,
         password=form_data.password,
@@ -49,7 +49,7 @@ async def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=create_access_token(
-            user.id,
+            user.username,
             expires_delta=access_token_expires,
         ),
     )
@@ -66,7 +66,7 @@ async def create_user(
     """
     Create new user.
     """
-    user = crud.get_user(session=session, username=user_in.username)
+    user = await crud.get_user(session=session, username=user_in.username)
     if user:
         raise HTTPException(
             status_code=400,
@@ -74,7 +74,7 @@ async def create_user(
         )
     check_password(user_in.password)
 
-    user = crud.create_user(session=session, user_create=user_in)
+    user = await crud.create_user(session=session, user_create=user_in)
 
     return UserRecoveryCode(
         username=user.username,
@@ -118,15 +118,17 @@ async def update_password_me(
         )
     check_password(body.new_password)
 
+    username = user.username
+
     new_recovery_code = generate_recovery_code()
     user.hashed_password = get_password_hash(body.new_password)
     user.recovery_code = new_recovery_code
 
     session.add(user)
-    session.commit()
+    await session.commit()
 
     return UserRecoveryCode(
-        username=user.username,
+        username=username,
         recovery_code=new_recovery_code,
         message="Password successfully updated",
     )

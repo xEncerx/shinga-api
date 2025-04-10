@@ -35,7 +35,7 @@ async def search(
 
     response = await manga_api.search(query=query, limit=limit)
 
-    user_mangas = get_user_manga(user_id=user.id)
+    user_mangas = await get_user_manga(username=user.username)
 
     if user_mangas:
         user_manga_dict = {m.id: m for m in user_mangas}
@@ -77,7 +77,7 @@ async def search_manga_by_id(
 @router.post("/create")
 @limiter.limit("30/minute")
 async def create_manga(
-    manga: Mangas,
+    manga: Manga,
     _: CurrentUserDep,
     request: Request,
 ) -> Message:
@@ -86,13 +86,13 @@ async def create_manga(
     Limits: 30 requests per minute
     """
 
-    if is_manga_exists(manga_id=manga.id):
+    if await is_manga_exists(manga_id=manga.id):
         raise HTTPException(
             status_code=409,
             detail="Manga already exists",
         )
 
-    success = add_manga(data=manga)
+    success = await add_manga(data=manga)
 
     if success:
         return Message(
@@ -117,14 +117,14 @@ async def update_user_manga(
     Limits: 30 requests per minute
     """
 
-    if not is_manga_exists(manga.manga_id):
+    if not await is_manga_exists(manga.manga_id):
         raise HTTPException(
             status_code=404,
             detail="Manga not found",
         )
 
-    success = upsert_user_manga(
-        user_id=user.id,
+    success = await upsert_user_manga(
+        username=user.username,
         data=manga,
     )
     if success:
@@ -159,7 +159,7 @@ async def get_all_user_manga(
             detail="Sorting by name is not supported for user manga",
         )
 
-    user_mangas = get_user_manga(user_id=user.id, section=section)
+    user_mangas = await get_user_manga(username=user.username, section=section)
     user_mangas = manga_sorter.sort(user_mangas, by=sortBy)
 
     total_items = len(user_mangas)

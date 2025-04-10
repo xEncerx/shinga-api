@@ -1,43 +1,42 @@
-from fastapi import Depends, HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
-from collections.abc import Generator
+from fastapi import Depends, HTTPException
+from collections.abc import AsyncGenerator
 from pydantic import ValidationError
 from typing import Annotated
-from sqlmodel import Session
 import jwt
 
 from app.core import settings, engine, security
-from app.models import Users, TokenPayload
+from app.models import User, TokenPayload
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"users/login/access-token",
 )
 
 
-def get_db() -> Generator[Session, None, None]:
-    with Session(engine) as session:
+async def get_db() -> AsyncGenerator[AsyncSession, None, None]:
+    async with AsyncSession(engine) as session:
         yield session
 
 
-SessionDep = Annotated[Session, Depends(get_db)]
+SessionDep = Annotated[AsyncSession, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-def get_current_user(session: SessionDep, token: TokenDep) -> Users:
+async def get_current_user(session: SessionDep, token: TokenDep) -> User:
     """
-    Validates the access token and retrieves the current user from the database.
+    Retrieve the current authenticated user from the token.
     Args:
-            session: Database session dependency
-            token: JWT token dependency
+        session (SessionDep): The database session dependency.
+        token (TokenDep): The JWT token dependency typically extracted from Authorization header.
     Returns:
-            Users: The current authenticated user
+        User: The authenticated user object.
     Raises:
-            HTTPException:
-                    - 403 Forbidden: When the token is invalid or expired
-                    - 404 Not Found: When the user associated with the token does not exist
+        HTTPException:
+            - 403 status code if the token is invalid or couldn't be decoded.
+            - 404 status code if the user associated with the token doesn't exist.
     """
-
     try:
         payload = jwt.decode(
             token,
@@ -47,15 +46,15 @@ def get_current_user(session: SessionDep, token: TokenDep) -> Users:
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=403,
             detail="Could not validate credentials",
         )
 
-    user = session.get(Users, token_data.sub)
+    user = await session.get(User, token_data.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
 
 
-CurrentUserDep = Annotated[Users, Depends(get_current_user)]
+CurrentUserDep = Annotated[User, Depends(get_current_user)]

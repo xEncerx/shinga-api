@@ -1,25 +1,28 @@
-from sqlmodel import Session, select, and_
+from sqlmodel.ext.asyncio.session import AsyncSession
 from datetime import datetime, timezone
+from sqlmodel import select, and_
 from asyncio import sleep
 
 from app.services.manga_api import manga_api
 from app.core.database import engine
 from app.core import settings, MC
-from app.models import Mangas
+from app.models import Manga
 from app.utils import logger
 
 
 async def manga_updater_task() -> None:
-    with Session(engine) as session:
+    async with AsyncSession(engine) as session:
         time_threshold = datetime.now(timezone.utc) - settings.MIN_UPDATE_INTERVAL
 
-        mangas = session.exec(
-            select(Mangas).where(
-                and_(
-                    Mangas.last_update < time_threshold,
-                    Mangas.status != MC.Status.RELEASED,
-                    Mangas.status != MC.Status.ANONS,
-                ),
+        mangas = (
+            await session.exec(
+                select(Manga).where(
+                    and_(
+                        Manga.last_update < time_threshold,
+                        Manga.status != MC.Status.RELEASED,
+                        Manga.status != MC.Status.ANONS,
+                    ),
+                )
             )
         ).all()
 
@@ -51,11 +54,11 @@ async def manga_updater_task() -> None:
                 manga.last_update = manga_data.last_update
 
                 session.add(manga)
-                session.commit()
+                await session.commit()
 
                 logger.info(f"Successfully updated manga {manga.id}")
             except Exception as e:
-                session.rollback()
+                await session.rollback()
                 logger.error(f"Error updating manga {manga.id}: {e}")
 
             await sleep(5)
