@@ -1,5 +1,5 @@
 from app.utils.manga_parsers import *
-from app.models import Mangas
+from app.models import Manga
 from app.utils import logger
 from app.core import MC
 
@@ -7,13 +7,13 @@ from app.core import MC
 def base_serializer(
     content: dict[str, str | int],
     source_name: str,
-) -> Mangas:
+) -> Manga:
     """
     Basic serializer with common data transformation logic.
     """
 
     try:
-        return Mangas(
+        return Manga(
             id=f"{source_name}|{content.get('id', '')}",
             source_id=str(content.get("id", "")),
             source_name=source_name,
@@ -36,18 +36,18 @@ def base_serializer(
         return None
 
 
-def remanga_serializer(data: list[dict] | dict) -> list[Mangas]:
+def remanga_serializer(data: list[dict] | dict) -> list[Manga]:
     return _serialize_list(data["content"], MC.Sources.REMANGA)
 
 
-def shikimori_serializer(data: list[dict] | dict) -> list[Mangas]:
+def shikimori_serializer(data: list[dict] | dict) -> list[Manga]:
     return _serialize_list(data["data"]["mangas"], MC.Sources.SHIKIMORI)
 
 
 def _serialize_list(
     data: list[dict] | dict,
     source_name: str,
-) -> list[Mangas]:
+) -> list[Manga]:
     if not data:
         return []
 

@@ -1,14 +1,19 @@
 from sqlmodel import Field, Relationship, SQLModel
 from datetime import datetime, timezone
+from sqlalchemy import Column, DateTime
 from sqlmodel import Enum as SQLEnum
-import uuid
 
 from app.core import MC
 
 
 # Base model for user data transfer (without sensitive information)
 class UserBase(SQLModel):
-    username: str = Field(unique=True, index=True, max_length=50)
+    username: str = Field(
+        unique=True,
+        primary_key=True,
+        index=True,
+        max_length=50,
+    )
 
 
 # Schema for user registration (includes password)
@@ -36,15 +41,15 @@ class UpdatePassword(SQLModel):
 
 
 # Database model for storing user information
-class Users(UserBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+class User(UserBase, table=True):
     hashed_password: str
     recovery_code: str | None
     registration_date: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
-    mangas: list["UsersManga"] = Relationship(back_populates="users")
+    manga: list["UserManga"] = Relationship(back_populates="user")
 
 
 # Base model for manga data
@@ -66,13 +71,14 @@ class MangaBase(SQLModel):
     genres: str
     categories: str
     last_update: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
 
 # Database model for storing manga information
-class Mangas(MangaBase, table=True):
-    users: list["UsersManga"] = Relationship(back_populates="mangas")
+class Manga(MangaBase, table=True):
+    user: list["UserManga"] = Relationship(back_populates="manga")
 
 
 # Model for user's manga with reading progress and section data
@@ -85,26 +91,27 @@ class UserMangaWithData(MangaBase):
 # Response model for manga-related API endpoints
 class MangaResponse(SQLModel):
     message: str = ""
-    content: list[Mangas | UserMangaWithData | str | None]
+    content: list[Manga | UserMangaWithData | str | None]
 
 
 # Junction table for user-manga relationship with additional metadata
-class UsersManga(SQLModel, table=True):
+class UserManga(SQLModel, table=True):
     id: int | None = Field(
         default=None,
         primary_key=True,
         sa_column_kwargs={"autoincrement": True},
     )
-    user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
-    manga_id: str = Field(foreign_key="mangas.id", index=True)
+    username: str = Field(foreign_key="user.username", index=True)
+    manga_id: str = Field(foreign_key="manga.id", index=True)
     current_url: str
     section: MC.Section = Field(sa_column=SQLEnum(MC.Section))
     last_read: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
-    users: Users = Relationship(back_populates="mangas")
-    mangas: Mangas = Relationship(back_populates="users")
+    user: User = Relationship(back_populates="manga")
+    manga: Manga = Relationship(back_populates="user")
 
 
 # Schema for updating user-manga relationship data
@@ -113,6 +120,7 @@ class UpdateUserManga(SQLModel):
     current_url: str = Field(default="")
     section: MC.Section = Field(sa_column=SQLEnum(MC.Section))
     last_read: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
