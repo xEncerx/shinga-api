@@ -4,10 +4,10 @@ from sqlmodel import select, and_
 from asyncio import sleep
 
 from app.services.manga_api import manga_api
-from app.core.database import engine
 from app.core import settings, MC
 from app.models import Manga
 from app.utils import logger
+from app.db import engine
 
 
 async def manga_updater_task() -> None:

@@ -7,8 +7,9 @@ from pydantic import ValidationError
 from typing import Annotated
 import jwt
 
-from app.core import settings, engine, security
 from app.models import User, TokenPayload
+from app.core import settings, security
+from app.db import engine
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"users/login/access-token",

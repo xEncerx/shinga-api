@@ -1,27 +1,11 @@
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import text, select
-from uuid import UUID
+from sqlmodel import select
 
-from app.core import settings
+from ..engine import engine
+
 from app.utils import logger
 from app.models import *
-
-engine = create_async_engine(
-    str(settings.SQLALCHEMY_DATABASE_URI),
-    connect_args={"server_settings": {"timezone": "UTC"}},
-)
-
-
-async def init_db() -> None:
-    async with AsyncSession(engine) as session:
-        try:
-            (await session.exec(text("SELECT 1"))).one()
-            logger.info("Successfully connected to the database!")
-
-        except Exception as _:
-            await session.rollback()
-            logger.error("Failed to connect to the database!")
+from app.core import MC
 
 
 async def is_manga_exists(manga_id: str) -> bool:
@@ -107,7 +91,7 @@ async def add_manga(data: Manga) -> bool:
     Example:
         ```
         manga_data = Manga(
-            source_name="mangadex",
+            source_name="remanga",
             source_id="12345",
             title="Example Manga",
             ...
@@ -137,11 +121,11 @@ async def get_user_manga(
     Retrieve manga entries associated with a specific user, optionally filtered by section.
     Args:
         username (str): The username to search for.
-        section (MC.Section, optional): Filter results by specific section. 
+        section (MC.Section, optional): Filter results by specific section.
             Defaults to MC.Section.ANY, which returns manga from all sections.
     Returns:
-        list[UserMangaWithData | None]: A list of UserMangaWithData objects containing 
-            combined user manga tracking information and manga metadata. Returns an empty 
+        list[UserMangaWithData | None]: A list of UserMangaWithData objects containing
+            combined user manga tracking information and manga metadata. Returns an empty
             list if an error occurs during database operations.
     Raises:
         No exceptions are raised as they are caught and logged internally.

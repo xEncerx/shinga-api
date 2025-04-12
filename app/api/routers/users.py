@@ -3,17 +3,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from typing import Annotated
 
-from app import crud
-from app.core import limiter
 from app.api.deps import SessionDep, CurrentUserDep
 from app.core.security import *
-from app.models import (
-    UpdatePassword,
-    UserCreate,
-    UserRecoveryCode,
-    Token,
-    UserBase,
-)
+from app.core import limiter
+import app.db.crud as crud
+from app.models import *
 
 router = APIRouter(prefix=f"/users", tags=["users"])
 

@@ -2,7 +2,7 @@ from difflib import SequenceMatcher
 from typing import Any
 from enum import Enum
 
-from app.models import MangaBase
+from app.models import Manga
 
 
 class SorterEnum(str, Enum):
@@ -16,21 +16,21 @@ class SorterEnum(str, Enum):
 class MangaSorter:
     def sort(
         self,
-        manga_list: list[MangaBase],
+        manga_list: list[Manga],
         by: SorterEnum,
         extra_data: Any = None,
         reverse: bool = False,
-    ) -> list[MangaBase]:
+    ) -> list[Manga]:
         """
         Sorts the given manga list based on the specified sorting method.
         Args:
-                manga_list (list[MangaBase]): List of manga objects to be sorted.
+                manga_list (list[Manga]): List of manga objects to be sorted.
                 by (SorterEnum): Enum value specifying the sorting method to use.
                 extra_data (Any, optional): Additional data required for sorting.
                         For example, a search query when sorting by name. Defaults to None.
                 reverse (bool, optional): If True, reverses the order of the sorted list. Defaults to False.
         Returns:
-                list[MangaBase]: Sorted list of manga objects.
+                list[Manga]: Sorted list of manga objects.
         Raises:
                 ValueError: If an unknown sorting method is specified.
         Example:
@@ -38,7 +38,7 @@ class MangaSorter:
                 >>> sorted_manga = sorter.sort(manga_list, SorterEnum.BY_NAME, reverse=True)
         """
 
-        result: list[MangaBase] = []
+        result: list[Manga] = []
 
         match by:
             case SorterEnum.BY_NAME:
@@ -62,19 +62,19 @@ class MangaSorter:
         return result
 
     @staticmethod
-    def _sort_manga_by_data(manga_list: list[MangaBase]) -> list[MangaBase]:
+    def _sort_manga_by_data(manga_list: list[Manga]) -> list[Manga]:
         return sorted(manga_list, key=lambda x: x.last_read, reverse=True)
 
     @staticmethod
-    def _sort_manga_by_rating(manga_list: list[MangaBase]) -> list[MangaBase]:
+    def _sort_manga_by_rating(manga_list: list[Manga]) -> list[Manga]:
         return sorted(manga_list, key=lambda x: x.avg_rating, reverse=True)
 
     @staticmethod
-    def _sort_manga_by_chapters(manga_list: list[MangaBase]) -> list[MangaBase]:
+    def _sort_manga_by_chapters(manga_list: list[Manga]) -> list[Manga]:
         return sorted(manga_list, key=lambda x: x.chapters, reverse=True)
 
     @staticmethod
-    def _sort_manga_by_name(query: str, manga_list: list[MangaBase]) -> list[MangaBase]:
+    def _sort_manga_by_name(query: str, manga_list: list[Manga]) -> list[Manga]:
         if not query:
             return manga_list
 
@@ -91,7 +91,7 @@ class MangaSorter:
 
             return min(base_score + contains_bonus + start_bonus + main_name_bonus, 1.0)
 
-        def get_manga_score(manga: MangaBase) -> float:
+        def get_manga_score(manga: Manga) -> float:
             scores = [calculate_similarity(manga.name, is_main_name=True)]
 
             if manga.alt_names:

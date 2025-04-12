@@ -10,9 +10,10 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 import uvicorn
 
-from app.core import settings, init_db, limiter
 from app.tasks import init_scheduler, scheduler
 from app.api.routers import api_routers
+from app.core import settings, limiter
+from app.db import init_db
 
 
 @asynccontextmanager
