@@ -6,7 +6,7 @@ from app.services.manga_api import manga_api
 from app.api.deps import CurrentUserDep
 from app.models import MangaResponse
 from app.core import limiter, MC
-from app.db.crud.title import *
+from app.db.crud.manga import *
 
 router = APIRouter(prefix=f"/titles", tags=["titles"])
 
