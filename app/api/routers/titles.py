@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Request, Query
 from fastapi_cache.decorator import cache
 
 from app.utils.sorter import manga_sorter, SorterEnum
-from app.services.manga_api import manga_api
 from app.api.deps import CurrentUserDep
 from app.models import MangaResponse
+from app.services import manga_api
 from app.core import limiter, MC
 from app.db.crud.manga import *
 

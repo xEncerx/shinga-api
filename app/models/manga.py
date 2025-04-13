@@ -29,6 +29,7 @@ class MangaBase(SQLModel):
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
+
 # Model for user's manga with reading progress and section data
 class UserMangaWithData(MangaBase):
     current_url: str

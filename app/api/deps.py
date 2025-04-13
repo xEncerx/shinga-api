@@ -16,7 +16,7 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None, None]:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSession(engine) as session:
         yield session
 

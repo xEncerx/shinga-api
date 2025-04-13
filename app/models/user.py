@@ -15,6 +15,7 @@ class UserBase(SQLModel):
         max_length=50,
     )
 
+
 # Model for storing user information
 class User(UserBase, table=True):
     hashed_password: str
@@ -23,6 +24,7 @@ class User(UserBase, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),
     )
+
 
 # Junction table for user-manga relationship with additional metadata
 class UserManga(SQLModel, table=True):

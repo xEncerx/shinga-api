@@ -5,6 +5,7 @@ from .engine import engine
 
 from app.utils import logger
 
+
 async def init_db() -> None:
     async with AsyncSession(engine) as session:
         try:

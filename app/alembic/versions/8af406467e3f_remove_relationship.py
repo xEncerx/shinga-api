@@ -5,6 +5,7 @@ Revises: bed2f1a745ad
 Create Date: 2025-04-12 17:43:41.793301
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -13,8 +14,8 @@ import sqlmodel.sql.sqltypes
 
 
 # revision identifiers, used by Alembic.
-revision: str = '8af406467e3f'
-down_revision: Union[str, None] = 'bed2f1a745ad'
+revision: str = "8af406467e3f"
+down_revision: Union[str, None] = "bed2f1a745ad"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
