@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlmodel import select, and_
 from asyncio import sleep
 
-from app.services.manga_api import manga_api
+from app.services import manga_api
 from app.core import settings, MC
 from app.models import Manga
 from app.utils import logger
@@ -32,13 +32,14 @@ async def manga_updater_task() -> None:
                     await manga_api.search_by_source(
                         query=manga.slug,
                         source=manga.source_name,
-                    ),
+                    )
                 ).content
 
                 if not manga_data:
                     continue
 
                 manga_data = manga_data[0]
+                manga_id = manga.id
 
                 manga.alt_names = manga_data.alt_names
                 manga.description = manga_data.description
@@ -56,9 +57,9 @@ async def manga_updater_task() -> None:
                 session.add(manga)
                 await session.commit()
 
-                logger.info(f"Successfully updated manga {manga.id}")
+                logger.info(f"Successfully updated manga {manga_id}")
             except Exception as e:
                 await session.rollback()
-                logger.error(f"Error updating manga {manga.id}: {e}")
+                logger.error(f"Error updating manga {manga_id}: {e}")
 
             await sleep(5)
