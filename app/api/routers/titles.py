@@ -12,7 +12,6 @@ router = APIRouter(prefix=f"/titles", tags=["titles"])
 
 
 @router.get("/global-search")
-@cache(expire=60 * 30)
 @limiter.limit("30/minute")
 async def search(
     query: str,

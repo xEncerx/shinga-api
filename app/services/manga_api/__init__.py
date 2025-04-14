@@ -1,3 +1,5 @@
+from fastapi_cache.coder import PickleCoder
+from fastapi_cache.decorator import cache
 from fastapi import HTTPException
 import asyncio
 
@@ -16,6 +18,7 @@ class MangaAPI(BaseMangaAPI):
         self.shikimori = ShikimoriAPI()
         self.manga_poisk = MangaPoisk()
 
+    @cache(expire=60 * 30, coder=PickleCoder)
     async def search(
         self,
         query: str,
@@ -23,19 +26,20 @@ class MangaAPI(BaseMangaAPI):
         by_slug: bool = False,
     ) -> MangaResponse:
         """
-        Search for manga using all available APIs .
+        Search for manga using all available APIs.
         Args:
                 query (str): The search query string.
                 limit (int, optional): Maximum number of results to return per source. Defaults to 10.
                 by_slug (bool, optional): If True, searches by manga slug instead of title. Defaults to False.
         Returns:
                 MangaResponse: A response object containing combined manga content from all sources.
+        Note:
+                Results are cached for 30 minutes using pickle serialization.
         Example:
                 ```
                 result = await manga_api.search("One Piece", limit=5)
                 ```
         """
-
         remanga_task = self.remanga.search(
             query=query,
             limit=limit,
