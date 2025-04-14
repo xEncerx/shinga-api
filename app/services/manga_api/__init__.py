@@ -60,6 +60,7 @@ class MangaAPI(BaseMangaAPI):
 
         return MangaResponse(content=content)
 
+    @cache(expire=60 * 30, coder=PickleCoder)
     async def search_by_source(
         self,
         query: str,

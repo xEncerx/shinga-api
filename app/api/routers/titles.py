@@ -56,13 +56,12 @@ async def search(
 
 
 @router.get("/")
-@cache(expire=60 * 30)
 @limiter.limit("30/minute")
 async def search_manga_by_id(
     query: str,
     source: MC.Sources,
     *,
-    _: CurrentUserDep,
+    user: CurrentUserDep,
     request: Request,
 ) -> MangaResponse:
     """
@@ -70,6 +69,10 @@ async def search_manga_by_id(
     Limits: 30 requests per minute
     """
     response = await manga_api.search_by_source(query=query, source=source)
+
+    if content := response.content:
+        if user_manga := await get_user_manga_by_id(user.username, content[0].id):
+            response.content = [user_manga]
 
     return response
 
