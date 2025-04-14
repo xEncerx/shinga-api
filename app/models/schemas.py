@@ -13,7 +13,10 @@ from app.core import MC
 class UpdateUserManga(SQLModel):
     manga_id: str
     current_url: str = Field(default="")
-    section: MC.Section = Field(sa_column=SQLEnum(MC.Section))
+    section: MC.Section | None = Field(
+        default=None,
+        sa_column=SQLEnum(MC.Section),
+    )
     last_read: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False),
         default_factory=lambda: datetime.now(timezone.utc),

@@ -56,8 +56,8 @@ async def upsert_user_manga(username: str, data: UpdateUserManga) -> bool:
             user_manga = (await session.exec(stmt)).first()
 
             if user_manga:
-                user_manga.current_url = data.current_url
-                user_manga.section = data.section
+                user_manga.current_url = data.current_url or user_manga.current_url
+                user_manga.section = data.section or user_manga.section
                 user_manga.last_read = data.last_read
             else:
                 new_user_manga = UserManga(
@@ -157,3 +157,33 @@ async def get_user_manga(
             await session.rollback()
             logger.error(f"Error in get_user_manga: {str(e)}", exc_info=True)
             return []
+
+
+async def get_user_manga_by_id(
+    username: str,
+    manga_id: str,
+) -> UserMangaWithData | None:
+    async with AsyncSession(engine) as session:
+        try:
+            stmt = (
+                select(UserManga, Manga)
+                .join(Manga, UserManga.manga_id == Manga.id)
+                .where(UserManga.username == username)
+                .where(Manga.id == manga_id)
+            )
+            result = (await session.exec(stmt)).first()
+
+            return (
+                UserMangaWithData(
+                    current_url=result.UserManga.current_url,
+                    section=result.UserManga.section,
+                    last_read=result.UserManga.last_read,
+                    **result.Manga.model_dump(),
+                )
+                if result
+                else None
+            )
+
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error in get_user_manga: {str(e)}", exc_info=True)
