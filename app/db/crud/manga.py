@@ -1,11 +1,12 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select
+from datetime import datetime, timezone
+from sqlmodel import select, and_
 
 from ..engine import engine
 
+from app.core import MC, settings
 from app.utils import logger
 from app.models import *
-from app.core import MC
 
 
 async def is_manga_exists(manga_id: str) -> bool:
@@ -111,6 +112,27 @@ async def add_manga(data: Manga) -> bool:
             await session.rollback()
             logger.error(f"Error in add_manga: {str(e)}", exc_info=True)
             return False
+
+
+async def get_updatable_manga() -> list[Manga]:
+    time_threshold = datetime.now(timezone.utc) - settings.MIN_UPDATE_INTERVAL
+
+    async with AsyncSession(engine) as session:
+        try:
+            stmt = select(Manga).where(
+                and_(
+                    Manga.last_update < time_threshold,
+                    Manga.status != MC.Status.RELEASED,
+                    Manga.status != MC.Status.ANONS,
+                ),
+            )
+            results = (await session.exec(stmt)).all()
+            return results
+
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Error in get_updatable_manga: {str(e)}", exc_info=True)
+            return []
 
 
 async def get_user_manga(

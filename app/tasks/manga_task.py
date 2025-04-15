@@ -1,65 +1,50 @@
-from sqlmodel.ext.asyncio.session import AsyncSession
-from datetime import datetime, timezone
-from sqlmodel import select, and_
 from asyncio import sleep
 
+from app.db.crud.manga import get_updatable_manga, add_manga
 from app.services import manga_api
-from app.core import settings, MC
-from app.models import Manga
 from app.utils import logger
-from app.db import engine
 
 
 async def manga_updater_task() -> None:
-    async with AsyncSession(engine) as session:
-        time_threshold = datetime.now(timezone.utc) - settings.MIN_UPDATE_INTERVAL
+    mangas = await get_updatable_manga()
+    if not mangas:
+        logger.info("No mangas to update")
+        return
 
-        mangas = (
-            await session.exec(
-                select(Manga).where(
-                    and_(
-                        Manga.last_update < time_threshold,
-                        Manga.status != MC.Status.RELEASED,
-                        Manga.status != MC.Status.ANONS,
-                    ),
+    logger.info(f"Updating {len(mangas)} mangas")
+
+    for manga in mangas:
+        try:
+            new_data = (
+                await manga_api.search_by_source(
+                    query=manga.slug,
+                    source=manga.source_name,
                 )
-            )
-        ).all()
+            ).content
 
-        for manga in mangas:
-            try:
-                manga_data = (
-                    await manga_api.search_by_source(
-                        query=manga.slug,
-                        source=manga.source_name,
-                    )
-                ).content
+            if not new_data:
+                continue
 
-                if not manga_data:
-                    continue
+            new_data = new_data[0]
+            manga_id = manga.id
 
-                manga_data = manga_data[0]
-                manga_id = manga.id
+            manga.alt_names = new_data.alt_names
+            manga.description = new_data.description
+            manga.avg_rating = new_data.avg_rating
+            manga.views = new_data.views
+            manga.chapters = new_data.chapters
+            manga.cover = new_data.cover
+            manga.status = new_data.status
+            manga.translate_status = new_data.translate_status
+            manga.year = new_data.year
+            manga.genres = new_data.genres
+            manga.categories = new_data.categories
+            manga.last_update = new_data.last_update
 
-                manga.alt_names = manga_data.alt_names
-                manga.description = manga_data.description
-                manga.avg_rating = manga_data.avg_rating
-                manga.views = manga_data.views
-                manga.chapters = manga_data.chapters
-                manga.cover = manga_data.cover
-                manga.status = manga_data.status
-                manga.translate_status = manga_data.translate_status
-                manga.year = manga_data.year
-                manga.genres = manga_data.genres
-                manga.categories = manga_data.categories
-                manga.last_update = manga_data.last_update
+            await add_manga(manga)
 
-                session.add(manga)
-                await session.commit()
+            logger.info(f"Successfully updated manga {manga_id}")
+        except Exception as e:
+            logger.error(f"Error updating manga {manga_id}: {e}")
 
-                logger.info(f"Successfully updated manga {manga_id}")
-            except Exception as e:
-                await session.rollback()
-                logger.error(f"Error updating manga {manga_id}: {e}")
-
-            await sleep(5)
+        await sleep(5)
