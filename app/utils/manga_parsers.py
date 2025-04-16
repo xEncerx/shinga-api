@@ -24,6 +24,8 @@ def get_name(content: dict[str, Any], source_name: str) -> str:
             return content.get("main_name", "")
         case MC.Sources.SHIKIMORI:
             return content.get("russian") or content.get("name", "")
+        case MC.Sources.MANGA_POISK:
+            return content.get("name", "")
 
 
 def get_slug(content: dict[str, Any], source_name: str) -> str:
@@ -33,6 +35,8 @@ def get_slug(content: dict[str, Any], source_name: str) -> str:
             return content.get("dir", "")
         case MC.Sources.SHIKIMORI:
             return str(content.get("id", ""))
+        case MC.Sources.MANGA_POISK:
+            return content.get("slug", "")
 
 
 def get_alt_names(content: dict[str, Any], source_name: str) -> str:
@@ -40,6 +44,17 @@ def get_alt_names(content: dict[str, Any], source_name: str) -> str:
     match source_name:
         case MC.Sources.REMANGA:
             return content.get("another_name") or content.get("secondary_name") or ""
+        case MC.Sources.MANGA_POISK:
+            return " / ".join(
+                filter(
+                    None,
+                    [
+                        content.get("name_alt"),
+                        content.get("name_jp"),
+                        content.get("name_en"),
+                    ],
+                )
+            )
         case MC.Sources.SHIKIMORI:
             return " / ".join(
                 filter(
@@ -70,6 +85,8 @@ def get_rating(content: dict[str, Any], source_name: str) -> str:
             return str(content.get("avg_rating", -1))
         case MC.Sources.SHIKIMORI:
             return str(content.get("score", -1))
+        case MC.Sources.MANGA_POISK:
+            return str(content.get("rating", -0.5) * 2)
 
 
 def get_views(content: dict[str, Any], source_name: str) -> int:
@@ -79,6 +96,8 @@ def get_views(content: dict[str, Any], source_name: str) -> int:
             return content.get("total_views", -1)
         case MC.Sources.SHIKIMORI:
             return sum(i.get("count", 0) for i in content.get("statusesStats", []))
+        case MC.Sources.MANGA_POISK:
+            return -1
 
 
 def get_chapters(content: dict[str, Any], source_name: str) -> int:
@@ -88,6 +107,8 @@ def get_chapters(content: dict[str, Any], source_name: str) -> int:
             return content.get("count_chapters", -1)
         case MC.Sources.SHIKIMORI:
             return content.get("chapters", -1)
+        case MC.Sources.MANGA_POISK:
+            return content.get("chapters_count", -1)
 
 
 def get_cover(content: dict[str, Any], source_name: str) -> str:
@@ -101,6 +122,8 @@ def get_cover(content: dict[str, Any], source_name: str) -> str:
             )
         case MC.Sources.SHIKIMORI:
             return content.get("poster", {}).get("originalUrl", "")
+        case MC.Sources.MANGA_POISK:
+            return content.get("poster", {}).get("link", "")
 
 
 def get_status(content: dict[str, Any], source_name: str) -> str:
@@ -109,9 +132,11 @@ def get_status(content: dict[str, Any], source_name: str) -> str:
 
     match source_name:
         case MC.Sources.REMANGA:
-            status = content.get("status", {}).get("name", "Unknown")
+            status = content.get("status", {}).get("name", MC.Status.UNKNOWN)
         case MC.Sources.SHIKIMORI:
-            status = content.get("status", "Unknown")
+            status = content.get("status", MC.Status.UNKNOWN)
+        case MC.Sources.MANGA_POISK:
+            status = content.get("translated", MC.Status.UNKNOWN)
 
     return status_validator(status)
 
@@ -126,12 +151,14 @@ def get_translate_status(content: dict[str, Any], source_name: str) -> str:
             # In normal search it's a dictionary with name and number
             # And also the same number means different statuses...
             status = (
-                status.get("name", "Unknown")
+                status.get("name", MC.Status.UNKNOWN)
                 if isinstance((status := content.get("translate_status")), dict)
                 else status
             )
         case MC.Sources.SHIKIMORI:
-            status = content.get("status", "Unknown")
+            status = content.get("status", MC.Status.UNKNOWN)
+        case MC.Sources.MANGA_POISK:
+            status = content.get("translated", MC.Status.UNKNOWN)
 
     return status_validator(status)
 
@@ -143,6 +170,8 @@ def get_year(content: dict[str, Any], source_name: str) -> int:
             return content.get("issue_year", -1)
         case MC.Sources.SHIKIMORI:
             return content.get("airedOn", {}).get("year", -1)
+        case MC.Sources.MANGA_POISK:
+            return content.get("year", -1)
 
 
 def get_genres(content: dict[str, Any], source_name: str) -> str:
@@ -150,14 +179,18 @@ def get_genres(content: dict[str, Any], source_name: str) -> str:
     match source_name:
         case MC.Sources.REMANGA:
             return " / ".join(
-                [i["name"] for i in content.get("genres", [])]
-                if content.get("genres")
-                else ["???"]
+                [i["name"] for i in genres]
+                if (genres := content.get("genres", []))
+                else []
             )
 
         case MC.Sources.SHIKIMORI:
+            return " / ".join([i.get("russian", "") for i in content.get("genres", [])])
+        case MC.Sources.MANGA_POISK:
             return " / ".join(
-                [i.get("russian", "???") for i in content.get("genres", [])]
+                [i.get("title", "") for i in genres]
+                if (genres := content.get("genres", []))
+                else []
             )
 
 
@@ -166,9 +199,11 @@ def get_categories(content: dict[str, Any], source_name: str) -> str:
     match source_name:
         case MC.Sources.REMANGA:
             return " / ".join(
-                [i["name"] for i in content.get("categories", [])]
-                if content.get("categories")
-                else ["???"]
+                [i["name"] for i in categories]
+                if (categories := content.get("categories", []))
+                else []
             )
         case MC.Sources.SHIKIMORI:
-            return "???"
+            return ""
+        case MC.Sources.MANGA_POISK:
+            return ""

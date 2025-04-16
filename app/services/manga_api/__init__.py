@@ -90,6 +90,10 @@ class MangaAPI(BaseMangaAPI):
                 response = await self.shikimori.search(
                     query=query, limit=limit, by_slug=bySlug
                 )
+            case MC.Sources.MANGA_POISK:
+                response = await self.manga_poisk.search(
+                    query=query, limit=limit, by_slug=bySlug
+                )
             case _:
                 raise HTTPException(
                     status_code=400, detail=f"Unsupported source for this action"

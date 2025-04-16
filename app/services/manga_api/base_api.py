@@ -25,7 +25,7 @@ class BaseMangaAPI(ABC):
         request_func: Callable,
         *args,
         **kwargs,
-    ) -> list[str, Any]:
+    ) -> dict[str, Any] | MangaResponse:
         try:
             response: Response = await request_func(*args, **kwargs)
             response.raise_for_status()

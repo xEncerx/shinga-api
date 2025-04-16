@@ -29,9 +29,9 @@ class MC:
         UNKNOWN = "Неизвестно"
 
     STATUSES = {
-        Status.ONGOING: ["ongoing", "продолжается", "ONGOING", "2", "4"],
+        Status.ONGOING: ["ongoing", "продолжается", "ONGOING", "2", "4", "0"],
         Status.LICENSED: ["licensed", "лицензировано"],
-        Status.RELEASED: ["released", "done", "закончен"],
+        Status.RELEASED: ["released", "done", "закончен", "1"],
         Status.FROZEN: ["frozen", "заморожен"],
         Status.ANONS: ["анонс"],
         Status.NO_TRANSLATOR: ["?"],

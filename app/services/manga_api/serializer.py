@@ -44,6 +44,10 @@ def shikimori_serializer(data: list[dict] | dict) -> list[Manga]:
     return _serialize_list(data["data"]["mangas"], MC.Sources.SHIKIMORI)
 
 
+def manga_poisk_serializer(data: list[dict] | dict) -> list[Manga]:
+    return _serialize_list(data["props"]["manga"]["data"], MC.Sources.MANGA_POISK)
+
+
 def _serialize_list(
     data: list[dict] | dict,
     source_name: str,
