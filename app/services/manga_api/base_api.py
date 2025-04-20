@@ -25,7 +25,7 @@ class BaseMangaAPI(ABC):
         request_func: Callable,
         *args,
         **kwargs,
-    ) -> dict[str, Any] | MangaResponse:
+    ) -> dict[str, Any]:
         try:
             response: Response = await request_func(*args, **kwargs)
             response.raise_for_status()
@@ -34,11 +34,10 @@ class BaseMangaAPI(ABC):
 
         except HTTPStatusError as e:
             logger.error(f"{self.__class__.__name__}: {e}")
-            return MangaResponse(message="Could not find any data", content=[])
-
         except Exception as e:
             logger.exception(f"Unexpected error in {self.__class__.__name__}")
-            return MangaResponse(message=str(e), content=[])
+
+        return {}
 
     @abstractmethod
     async def search(

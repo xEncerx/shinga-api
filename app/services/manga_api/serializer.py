@@ -1,7 +1,28 @@
+from typing import Any, Callable, TypeVar
+from functools import wraps
+
+from app.models import Manga, MangaResponse
 from app.utils.manga_parsers import *
-from app.models import Manga
 from app.utils import logger
 from app.core import MC
+
+
+T = TypeVar("T")
+
+
+def handle_empty_data(default_return: Any = []):
+    """Decorator that handles empty data for serializers"""
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        @wraps(func)
+        def wrapper(data: dict, *args, **kwargs):
+            if not data:
+                return default_return
+            return func(data, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def base_serializer(
@@ -36,14 +57,17 @@ def base_serializer(
         return None
 
 
+@handle_empty_data()
 def remanga_serializer(data: list[dict] | dict) -> list[Manga]:
     return _serialize_list(data["content"], MC.Sources.REMANGA)
 
 
+@handle_empty_data()
 def shikimori_serializer(data: list[dict] | dict) -> list[Manga]:
     return _serialize_list(data["data"]["mangas"], MC.Sources.SHIKIMORI)
 
 
+@handle_empty_data()
 def manga_poisk_serializer(data: list[dict] | dict) -> list[Manga]:
     return _serialize_list(data["props"]["manga"]["data"], MC.Sources.MANGA_POISK)
 
