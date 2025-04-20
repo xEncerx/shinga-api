@@ -103,6 +103,7 @@ async def add_manga(data: Manga) -> bool:
     async with AsyncSession(engine) as session:
         try:
             data.id = f"{data.source_name}|{data.source_id}"
+            data.last_update = datetime.now(timezone.utc)
 
             session.add(data)
             await session.commit()
