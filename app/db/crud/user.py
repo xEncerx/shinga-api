@@ -76,7 +76,7 @@ async def get_user(*, session: AsyncSession, username: str) -> User | None:
     Returns:
         User | None: The found user object or None if no user with the given username exists.
     """
-    statement = select(User).where(User.username == username)
+    statement = select(User).where(User.username.ilike(username))
     user = (await session.exec(statement)).first()
 
     return user
