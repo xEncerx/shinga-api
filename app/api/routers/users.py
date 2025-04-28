@@ -85,34 +85,26 @@ async def get_me(user: CurrentUserDep):
     return UserBase(username=user.username)
 
 
-@router.patch("/me/password/update", response_model=UserRecoveryCode)
-async def update_password_me(
+@router.patch("/password/recover", response_model=UserRecoveryCode)
+@limiter.limit("5/hour")
+async def recover_password(
     *,
     session: SessionDep,
     body: UpdatePassword,
-    user: CurrentUserDep,
+    request: Request,
 ) -> Any:
     """
-    Update own password.
+    Recover user password.
     """
+    user = await crud.get_user(session=session, username=body.username)
+
     if body.recovery_code != user.recovery_code:
         raise HTTPException(
             status_code=400,
             detail="Invalid recovery code",
         )
-    if not verify_password(body.current_password, user.hashed_password):
-        raise HTTPException(
-            status_code=400,
-            detail="Incorrect password",
-        )
-    if body.current_password == body.new_password:
-        raise HTTPException(
-            status_code=400,
-            detail="New password cannot be the same as the current one",
-        )
-    check_password(body.new_password)
 
-    username = user.username
+    check_password(body.new_password)
 
     new_recovery_code = generate_recovery_code()
     user.hashed_password = get_password_hash(body.new_password)
@@ -122,7 +114,7 @@ async def update_password_me(
     await session.commit()
 
     return UserRecoveryCode(
-        username=username,
+        username=body.username,
         recovery_code=new_recovery_code,
         message="Password successfully updated",
     )

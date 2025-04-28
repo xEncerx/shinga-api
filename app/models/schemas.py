@@ -42,7 +42,7 @@ class UserRecoveryCode(UserBase):
 
 # Schema for password change operation
 class UpdatePassword(SQLModel):
-    current_password: str = Field(min_length=8, max_length=40)
+    username: str
     new_password: str = Field(min_length=8, max_length=40)
     recovery_code: str
 
