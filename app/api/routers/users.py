@@ -109,8 +109,14 @@ async def recover_password(
             status_code=400,
             detail="Invalid recovery code",
         )
-
+    
     check_password(body.new_password)
+    
+    if verify_password(body.new_password, user.hashed_password):
+        raise HTTPException(
+            status_code=400,
+            detail="New password cannot be the same as the current one",
+        )
 
     new_recovery_code = generate_recovery_code()
     user.hashed_password = get_password_hash(body.new_password)
