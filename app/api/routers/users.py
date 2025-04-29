@@ -98,6 +98,12 @@ async def recover_password(
     """
     user = await crud.get_user(session=session, username=body.username)
 
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="User does not exist in the system.",
+        )
+
     if body.recovery_code != user.recovery_code:
         raise HTTPException(
             status_code=400,
