@@ -1,0 +1,1 @@
+from .mal.client import MalProvider

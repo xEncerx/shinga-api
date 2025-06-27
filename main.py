@@ -1,58 +1,22 @@
-from fastapi_cache.backends.inmemory import InMemoryBackend
-from fastapi_cache.backends.redis import RedisBackend
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from contextlib import asynccontextmanager
-from fastapi_cache import FastAPICache
-from redis import asyncio as aioredis
-from typing import AsyncGenerator
-from fastapi import FastAPI
-import uvicorn
+import asyncio
 
-from app.tasks import init_scheduler, scheduler
-from app.api.routers import api_routers
-from app.core import settings, limiter
-from app.db import init_db
+from app.infrastructure.managers import QueueManager, ProxyManager
+from app.infrastructure.storage import CoverManger
+from app.providers import MalProvider
+from app.providers.mal.parser import MalParser
+from app.core import *
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-    if settings.REDIS_URL:
-        backend = RedisBackend(
-            aioredis.from_url(settings.REDIS_URL),
-        )
-    else:
-        backend = InMemoryBackend()
+async def main():
+    # queue_manager = QueueManager(num_workers=10)
+    # await queue_manager.initialize()
+    # await queue_manager.run()
+    manager = ProxyManager()
+    await manager.initialize()
+    await manager.cleanup()
 
-    FastAPICache.init(backend, prefix="api:cache")
-
-    await init_db()
-    init_scheduler()
-
-    yield
-
-    scheduler.shutdown()
-
-
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=None,
-    docs_url=None,
-    redoc_url=None,
-    lifespan=lifespan,
-)
-
-app.include_router(api_routers)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOW_ORIGINS,
-    allow_methods=settings.ALLOW_METHODS,
-    allow_headers=settings.ALLOW_HEADERS,
-)
 
 if __name__ == "__main__":
-    uvicorn.run(app, log_config=None)
+    setup_logging()
+
+    asyncio.run(main())

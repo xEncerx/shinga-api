@@ -1,0 +1,1 @@
+from .covers import CoverManger
