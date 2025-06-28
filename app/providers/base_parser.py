@@ -1,18 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from ..infrastructure.db.models import (
-    Title,
-    TitleCover,
-    TitleType,
-    TitleStatus,
-    TitleReleaseTime,
-    TitleDescription,
-    TitleGenre,
-)
+from ..infrastructure.db.models import *
 
 
-class BaseProviderParser(ABC):
+class BaseParserProvider(ABC):
     """
     Base class for provider parsers.
     This class should be inherited by all provider parsers.
