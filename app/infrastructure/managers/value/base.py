@@ -78,8 +78,6 @@ class BaseValueManager(ABC):
         self.db_path.mkdir(parents=True, exist_ok=True)
         self.db_path = self.db_path / f"{self.db_name}.db"
 
-        print(self.db_path.absolute())
-
         # Rate limiting configuration
         self.limits: dict[str, Limit] = {}
         self.usage_tracking: dict[str, dict[str, UsageRecord]] = {}
@@ -142,8 +140,9 @@ class BaseValueManager(ABC):
 
     async def _init_database(self) -> None:
         """Initialize database table for this manager"""
-        async with aiofiles.open(self.db_path, mode="w") as f:
-            pass
+        if not self.db_path.exists():
+            async with aiofiles.open(self.db_path, mode="w") as f:
+                pass
 
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
@@ -447,7 +446,7 @@ class BaseValueManager(ABC):
             logger.info("No values to validate")
             return
 
-        logger.info(f"Validating {len(values)} values...")
+        logger.info(f"{self.__class__.__name__}: Validating {len(values)} values...")
 
         if self.batch_validation:
             await self._validate_values_batch(values)
@@ -493,9 +492,9 @@ class BaseValueManager(ABC):
             new_values = await self.fetch_values()
             if new_values:
                 await self.store_values(new_values)
-                logger.info(f"Fetched and stored {len(new_values)} new values")
+                logger.info(f"{self.__class__.__name__}: Fetched and stored {len(new_values)} new values")
             else:
-                logger.info("No new values fetched")
+                logger.info(f"{self.__class__.__name__}: No new values fetched")
         except Exception as e:
             logger.error(f"Error fetching values: {e}")
 
