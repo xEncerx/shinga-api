@@ -1,9 +1,8 @@
-import aiohttp
-
+from app.utils.async_http_client import AsyncHttpClient, ClientTimeout
 from .base import BaseValueManager, logger
 
 
-class ProxyManager(BaseValueManager):
+class ProxyManager(BaseValueManager, AsyncHttpClient):
     """
     Proxy manager that handles proxy fetching, validation, and rate limiting.
 
@@ -20,7 +19,7 @@ class ProxyManager(BaseValueManager):
         fetch_interval: int = 600,
         batch_validation: bool = True,
         batch_size: int = 1000,
-        validation_timeout: int = 2,
+        validation_timeout: int = 3,
         test_url: str = "http://example.com",
     ):
         """
@@ -34,20 +33,20 @@ class ProxyManager(BaseValueManager):
             validation_timeout: Timeout for proxy validation requests
             test_url: URL to use for proxy validation
         """
-        super().__init__(
+        BaseValueManager.__init__(
+            self,
             validation_interval=validation_interval,
             fetch_interval=fetch_interval,
             batch_validation=batch_validation,
             batch_size=batch_size,
         )
-
-        self.validation_timeout = validation_timeout
-        self.test_url = test_url
-
-        self.session_http = aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False)
+        AsyncHttpClient.__init__(
+            self,
+            timeout=validation_timeout,
+            disable_ssl=True,
         )
-        self.session_http._ssl = False
+
+        self.test_url = test_url
 
         # Configure rate limits
         # Example: 3 requests per second, 60 requests per minute
@@ -96,17 +95,17 @@ class ProxyManager(BaseValueManager):
             True if proxy is working, False otherwise
         """
         try:
-            async with self.session_http.get(
+            response = await self.get(
                 self.test_url,
                 proxy=value,
-                timeout=self.validation_timeout, # type: ignore
-            ) as response:
-                return response.status == 200
-        except:
+                response_type="text",
+            )
+            return True if response else False
+        except Exception as e:
             return False
 
     async def cleanup(self):
-        await self.session_http.close()
+        await self.http_client.close()
         return await super().cleanup()
 
     async def _fetch_from_public_proxy_list(self, url: str) -> list[str]:
@@ -114,18 +113,18 @@ class ProxyManager(BaseValueManager):
         proxies = []
 
         try:
-            async with self.session_http.get(
-                url, timeout=aiohttp.ClientTimeout(total=15)
-            ) as response:
-                response.raise_for_status()
-
-                content = await response.text()
-                for line in content.splitlines():
-                    if ":" not in line: continue
-                    if line.startswith("http://"):
-                        proxies.append(line.strip())
-                    elif line:
-                        proxies.append(f"http://{line.strip()}")
+            response = await self.get(
+                url=url,
+                response_type="text",
+                timeout=ClientTimeout(total=15)
+            )
+            for line in response.splitlines():
+                if ":" not in line:
+                    continue
+                if line.startswith("http://"):
+                    proxies.append(line.strip())
+                elif line:
+                    proxies.append(f"http://{line.strip()}")
         except Exception as e:
             logger.error(f"Error fetching from {url}: {e}")
 

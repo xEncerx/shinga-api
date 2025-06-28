@@ -1,9 +1,9 @@
 from enum import Enum, auto
-from typing import Any
 
 from app.infrastructure.storage import CoverManger
 from app.domain.services.translation import Translator
 from app.providers import MalProvider
+from app.core import logger
 
 
 class WorkerStatus(Enum):
@@ -27,6 +27,7 @@ class Worker:
 
         self._mal_client = MalProvider()
         self._translator = Translator()
+        self._cover_manager = CoverManger()
 
     async def parse(self, value: int, proxy: str, api_key: str) -> None:
         self.status = WorkerStatus.WORKING
@@ -42,19 +43,24 @@ class Worker:
             raise WorkerError(data or 400, f"Failed to process task: {value}")
         
         # Save covers
-        async with CoverManger(proxy=proxy) as cover_manager:
-            new_urls = await cover_manager.batch_save(
-                [
-                    (data.cover.url, "mal", str(data.id), ""),
-                    (data.cover.large_url, "mal", str(data.id), "l"),
-                    (data.cover.small_url, "mal", str(data.id), "s"),
-                ]
-            )
+        new_urls = await self._cover_manager.batch_save(
+            [
+                (data.cover.url, "mal", str(data.id), ""),
+                (data.cover.large_url, "mal", str(data.id), "l"),
+                (data.cover.small_url, "mal", str(data.id), "s"),
+            ],
+            proxy=proxy,
+        )
         data.cover.url = new_urls[0] or data.cover.url
         data.cover.large_url = new_urls[1] or data.cover.large_url
         data.cover.small_url = new_urls[2] or data.cover.small_url
 
-        
         self.status = WorkerStatus.READY
         self.current_task = None
+        logger.success(f"Worker id_{self.worker_id} successfully processed task: {value}")
 
+    async def cleanup(self) -> None:
+        """Cleanup resources used by the worker."""
+        await self._mal_client.close()
+        await self._translator.close()
+        await self._cover_manager.close()

@@ -10,7 +10,3 @@ class Language(str, Enum):
             Language.EN: "English",
             Language.RU: "Русский"
         }[self]
-    
-class TranslatorProvider(str, Enum):
-    GOOGLE = "google"
-    OPENAI = "openai"

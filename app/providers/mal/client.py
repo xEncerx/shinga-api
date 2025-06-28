@@ -1,8 +1,8 @@
-from httpx import HTTPStatusError
+from aiohttp.client_exceptions import ClientResponseError
 
-from app.core import logger
 from ..base_provider import BaseProvider, Title
 from .parser import MalParser
+from app.core import logger
 
 
 class MalProvider(BaseProvider):
@@ -14,6 +14,10 @@ class MalProvider(BaseProvider):
     def __init__(self, base_url="https://api.jikan.moe/v4/"):
         super().__init__(base_url=base_url)
 
+    async def __aenter__(self) -> "MalProvider":
+        """Async context manager entry."""
+        return self
+
     async def get_by_id(self, id: int, proxy: str | None = None) -> Title | int | None:  #type: ignore
         try:
             data = await self.get(url=f"manga/{id}", proxy=proxy)
@@ -21,8 +25,8 @@ class MalProvider(BaseProvider):
             if not data: return
 
             return await MalParser.parse(data["data"])
-        except HTTPStatusError as e:
-            return e.response.status_code
+        except ClientResponseError as e:
+            return e.status
         except Exception as e:
             logger.error(f"Error fetching data from MAL for ID {id}: {e}")
             return
