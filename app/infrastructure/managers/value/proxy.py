@@ -1,5 +1,8 @@
 from app.utils.async_http_client import AsyncHttpClient, ClientTimeout
-from .base import BaseValueManager, logger
+from app.core import logger, settings
+from .base import BaseValueManager
+
+import aiofiles
 
 
 class ProxyManager(BaseValueManager, AsyncHttpClient):
@@ -46,7 +49,9 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
             disable_ssl=True,
         )
 
-        self.test_url = test_url
+        self._test_url = test_url
+
+        self._proxies_file = settings.CORE_PATH / "proxies.txt"     
 
         # Configure rate limits
         # Example: 3 requests per second, 60 requests per minute
@@ -63,19 +68,7 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
         proxies = []
 
         try:
-            # Fetch from free proxy list APIs
-            # proxies.extend(await self._fetch_from_geonode())
-            # proxies.extend(
-            #     await self._fetch_from_public_proxy_list(
-            #         "https://raw.githubusercontent.com/proxifly/free-proxy-list/refs/heads/main/proxies/all/data.txt"
-            #     )
-            # )
-            # proxies.extend(
-            #     await self._fetch_from_public_proxy_list(
-            #         "https://pastebin.com/raw/mr0Nxai6"
-            #     )
-            # )
-
+            proxies.extend(await self._fetch_from_file())
             # Remove duplicates
             proxies = list(set(proxies))
 
@@ -96,7 +89,7 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
         """
         try:
             response = await self.get(
-                self.test_url,
+                self._test_url,
                 proxy=value,
                 response_type="text",
             )
@@ -129,3 +122,13 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
             logger.error(f"Error fetching from {url}: {e}")
 
         return proxies
+    
+    async def _fetch_from_file(self) -> list[str]:
+        if not self._proxies_file.exists():
+            async with aiofiles.open(self._proxies_file, "w"): ...
+            return []
+        
+        async with aiofiles.open(self._proxies_file, mode='r') as f:
+            content = await f.read()
+
+        return [line for i in content.splitlines() if (line := i.strip())]
