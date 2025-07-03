@@ -151,11 +151,9 @@ class BaseValueManager(ABC):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     value TEXT UNIQUE NOT NULL,
                     status TEXT NOT NULL DEFAULT '{ValueStatus.ACTIVE.value}',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     last_used TIMESTAMP,
                     cooldown_until TIMESTAMP,
-                    usage_count INTEGER DEFAULT 0,
-                    metadata TEXT
+                    usage_count INTEGER DEFAULT 0
                 )
                 """
             )
@@ -302,7 +300,7 @@ class BaseValueManager(ABC):
             await db.commit()
 
         if needs_cooling:
-            logger.info(
+            logger.debug(
                 f"Value {value} sent to cooling until {datetime.fromtimestamp(cooldown_until)}"
             )
 
@@ -335,8 +333,6 @@ class BaseValueManager(ABC):
 
     async def _update_cooling_statuses(self) -> None:
         """Update status of values that finished cooling down"""
-        current_time = datetime.now()
-
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 f"""
@@ -345,7 +341,7 @@ class BaseValueManager(ABC):
                 WHERE status = '{ValueStatus.COOLING.value}' 
                 AND cooldown_until <= ?
                 """,
-                (current_time,),
+                (datetime.now(),),
             )
             await db.commit()
 
@@ -425,7 +421,7 @@ class BaseValueManager(ABC):
                 FROM value_manager
                 """
             )
-            
+
             row = await cursor.fetchone()
             total_count, active_count, cooling_count = row if row else (0, 0, 0)
 
@@ -492,7 +488,10 @@ class BaseValueManager(ABC):
             new_values = await self.fetch_values()
             if new_values:
                 await self.store_values(new_values)
-                logger.info(f"{self.__class__.__name__}: Fetched and stored {len(new_values)} new values")
+                await self._update_cooling_statuses()
+                logger.info(
+                    f"{self.__class__.__name__}: Fetched and stored {len(new_values)} new values"
+                )
             else:
                 logger.info(f"{self.__class__.__name__}: No new values fetched")
         except Exception as e:
