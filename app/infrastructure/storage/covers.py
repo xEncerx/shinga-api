@@ -29,13 +29,15 @@ class CoverManger(AsyncHttpClient):
         Initialize the CoverManager.
 
         Args:
-            storage_path: Directory path where cover images will be stored
-            proxy: Optional proxy URL for HTTP requests
-            timeout: Request timeout in seconds
+            storage_path (str): Directory path where cover images will be stored
+            proxy (str | None): Optional proxy URL for HTTP requests
+            timeout (int): Request timeout in seconds
         """
 
         self.storage_path = Path(storage_path)
         self.storage_path.mkdir(parents=True, exist_ok=True)
+
+        self.SIZE_MAP = {"": (225, 319), "s": (112, 160), "l": (423, 600)}
 
         super().__init__(proxy=proxy, timeout=timeout)
 
@@ -53,9 +55,9 @@ class CoverManger(AsyncHttpClient):
         Generating a file name using a template: provider_id_size.webp
 
         Args:
-            provider: Provider ID (mal, shiki, etc)
-            content_id: Provider's content ID
-            size: Size: "" (original), "s" (small), "l" (large)
+            provider (str): Provider ID (mal, shiki, etc)
+            content_id (str): Provider's content ID
+            size (str): Size: "" (original), "s" (small), "l" (large)
 
         :return: Generated filename in base32 format with .webp extension
         """
@@ -72,7 +74,8 @@ class CoverManger(AsyncHttpClient):
         Download an image from a given URL.
 
         Args:
-            url: The URL of the image to download
+            url (str): The URL of the image to download
+            proxy (str | None): Optional proxy URL for the request
 
         :return: Image data as bytes, or None if download failed
         """
@@ -94,8 +97,8 @@ class CoverManger(AsyncHttpClient):
         Convert image to WebP format and optionally resize it.
 
         Args:
-            image_data: Bytes of the original image
-            target_size: Optional target size as (width, height) tuple
+            image_data (bytes): Bytes of the original image
+            target_size (tuple[int, int]): Optional target size as (width, height) tuple
 
         :return: Processed image data in WebP format as bytes
         """
@@ -113,7 +116,7 @@ class CoverManger(AsyncHttpClient):
             if target_size:
                 img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
-            img.save(output_buffer, format="WEBP", quality=85, method=6)
+            img.save(output_buffer, format="WEBP", quality=95)
 
             return output_buffer.getvalue()
 
@@ -130,11 +133,12 @@ class CoverManger(AsyncHttpClient):
         Download, process and save a cover image.
 
         Args:
-            image_url: URL of the source image
-            provider: Provider name (e.g., "mal", "shiki")
-            content_id: Unique content identifier
-            size_type: Size variant - "" (original = 225x319), "s" (small = 42x60), "l" (large = 423x600)
-            force_redownload: Whether to overwrite existing files
+            image_url str | None: URL of the source image
+            provider (str): Provider name (e.g., "mal", "shiki")
+            content_id (str): Unique content identifier
+            size_type (str): Size variant - "" (original = 225x319), "s" (small = 112x160), "l" (large = 423x600)
+            force_redownload (bool): Whether to overwrite existing files
+            proxy (str | None): Optional proxy URL for HTTP requests
 
         :return: Public URL of the saved cover, or None if processing failed
         """
@@ -147,8 +151,7 @@ class CoverManger(AsyncHttpClient):
         if filepath.exists() and not force_redownload:
             return f"{settings.COVER_PUBLIC_PATH}/{filename}"
 
-        size_map = {"": (225, 319), "s": (42, 60), "l": (423, 600)}
-        target_size = size_map[size_type]
+        target_size = self.SIZE_MAP[size_type]
 
         try:
             image_data = await self._download_image(image_url, proxy=proxy)
@@ -167,38 +170,75 @@ class CoverManger(AsyncHttpClient):
                 filepath.unlink()
             raise RuntimeError(f"Failed to process cover: {str(e)}")
 
-    async def batch_save(
+    async def save_cover_all_size(
         self,
-        tasks: list[tuple[str | None, str, str, str]],
-        max_concurrent: int = 3,
+        image_url: str | None,
+        provider: str,
+        content_id: str,
+        force_redownload: bool = False,
         proxy: str | None = None,
     ) -> list[str | None]:
         """
-        Process multiple cover images concurrently.
+        Process a single image into all three size variants and save them.
 
         Args:
-            tasks: List of tuples containing (image_url, provider, content_id, size_type)
-            max_concurrent: Maximum number of simultaneous download/processing operations
+            image_url (str | None): URL of the source image
+            provider (str): Provider name (e.g., "mal", "shiki")
+            content_id (str): Unique content identifier
+            force_redownload (bool): Whether to overwrite existing files
+            proxy (str | None): Optional proxy URL for HTTP requests
 
-        :return: List of public URLs for successfully processed covers, None for failed ones
+        :return: List of public URLs for all three size variants in order [original, small, large]
         """
-        semaphore = asyncio.Semaphore(max_concurrent)
-        results = []
+        if not image_url:
+            return [None, None, None]
 
-        async def process_task(task):
-            """
-            Process a single cover task with concurrency control.
+        image_data = await self._download_image(image_url, proxy=proxy)
+        if not image_data:
+            return [None, None, None]
 
-            Args:
-                task: Tuple containing (image_url, provider, content_id, size_type)
-            """
-            async with semaphore:
-                try:
-                    url = await self.save_cover(*task, proxy=proxy)
-                    results.append(url)
-                except Exception as e:
-                    print(f"Error processing {task}: {e}")
-                    results.append(None)
+        result = []
+        for name, size in self.SIZE_MAP.items():
+            filename = self._generate_filename(provider, content_id, name)  # type: ignore
+            filepath = self.storage_path / filename
 
-        await asyncio.gather(*(process_task(task) for task in tasks))
-        return results
+            if filepath.exists() and not force_redownload:
+                result.append(f"{settings.COVER_PUBLIC_PATH}/{filename}")
+                continue
+
+            try:
+                processed_data = self._process_image(image_data, size)
+
+                async with aiofiles.open(filepath, "wb") as f:
+                    await f.write(processed_data)
+
+                result.append(f"{settings.COVER_PUBLIC_PATH}/{filename}")
+            except Exception as e:
+                logger.error(f"Failed to process cover size {size}: {str(e)}")
+                if filepath.exists():
+                    filepath.unlink()
+                result.append(None)
+
+        return result
+
+    async def batch_save(
+        self,
+        images: list[tuple[str | None, str, str]],
+        force_redownload: bool = False,
+        proxy: str | None = None,
+    ) -> list[list[str | None]]:
+        """
+        Batch process and save multiple cover images.
+
+        Args:
+            images: List of tuples (image_url, provider, content_id)
+            force_redownload (bool): Whether to overwrite existing files
+            proxy (str | None): Optional proxy URL for HTTP requests
+
+        :return: List of lists containing public URLs for each image in all three sizes
+        """
+        tasks = [
+            self.save_cover_all_size(image_url, provider, content_id, force_redownload, proxy)
+            for image_url, provider, content_id in images
+        ]
+        return await asyncio.gather(*tasks)
