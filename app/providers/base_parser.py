@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from ..infrastructure.db.models import *
+from app.domain.models import *
 
 
 class BaseParserProvider(ABC):
@@ -12,9 +13,18 @@ class BaseParserProvider(ABC):
 
     @staticmethod
     @abstractmethod
-    async def parse(data: dict[str, Any]) -> Title:
+    def parse(data: dict[str, Any]) -> Title:
         """
         Parse the raw data from the provider into a Title model.
         This method should be implemented by subclasses to handle specific parsing logic.
+        """
+        ...
+
+    @staticmethod
+    @abstractmethod
+    def parse_page(data: dict[str, Any]) -> TitlePagination:
+        """
+        Parse a page of raw data from the provider into a TitlePagination model.
+        This method should be implemented by subclasses to handle specific pagination parsing logic.
         """
         ...
