@@ -1,63 +1,219 @@
 from enum import Enum, auto
+from itertools import chain
+import asyncio
 
-from app.infrastructure.storage import CoverManger
+from app.infrastructure.db.models import TitleDescription
 from app.domain.services.translation import Translator
+from app.infrastructure.managers import ProxyManager
+from app.infrastructure.storage import CoverManger
+from app.infrastructure.db.crud import *
 from app.providers import MalProvider
 from app.core import logger
 
 
 class WorkerStatus(Enum):
+    """Enumeration representing the status of a worker."""
+
     READY = auto()
     WORKING = auto()
     ERROR = auto()
 
 
 class WorkerError(Exception):
+    """Custom exception for worker errors."""
+
     def __init__(self, status_code: int, message: str):
+        """
+        Initialize the WorkerError with a status code and message.
+
+        Args:
+            status_code (int): HTTP status code representing the error.
+            message (str): Description of the error.
+        """
         self.status_code = status_code
         self.message = message
         super().__init__(f"Error {status_code}: {message}")
 
 
+class WorkerAction(Enum):
+    """Enumeration representing the actions a worker can perform."""
+
+    PARSING = auto()
+    TRANSLATE = auto()
+    UPDATE = auto()
+
+
 class Worker:
-    def __init__(self, worker_id: int) -> None:
+    """Worker class for handling tasks related to parsing, translating, and updating titles."""
+
+    def __init__(self, worker_id: int, proxy_manager: ProxyManager) -> None:
+        """
+        Initialize the Worker instance.
+
+        Args:
+            worker_id (int): Unique identifier for the worker.
+            proxy_manager (ProxyManager): Instance of ProxyManager to manage proxies.
+        """
         self.worker_id = worker_id
         self.status = WorkerStatus.READY
-        self.current_task = None
 
+        self._proxy_manager = proxy_manager
         self._mal_client = MalProvider()
         self._translator = Translator()
         self._cover_manager = CoverManger()
 
-    async def parse(self, value: int, proxy: str, api_key: str) -> None:
+    async def parsing(self, value: int) -> None:
+        """
+        Parse a page of titles from MyAnimeList and save their covers.
+        
+        Args:
+            value (int): Page number to parse titles from.
+        """
         self.status = WorkerStatus.WORKING
-        self.current_task = value
+
+        # Get proxy from the proxy manager
+        proxy = await self._proxy_manager.get_value()
+        if not proxy:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(401, "No available proxy for task")
+
+        # Parse page of titles
+        page = await self._mal_client.get_page(page=value, proxy=proxy)
+
+        # Save covers for titles in batches
+        batch_size = 10
+        batches = [
+            page.data[i : i + batch_size] for i in range(0, len(page.data), batch_size)
+        ]
+        for batch in batches:
+            images_data = await self._cover_manager.batch_save(
+                images=[
+                    (title.cover.large_url, "mal", str(title.source_id))
+                    for title in batch
+                ],
+                proxy=proxy,
+            )
+            # Update titles with new cover URLs
+            for title, covers in zip(batch, images_data):
+                title.cover.url = covers[0] or title.cover.url
+                title.cover.small_url = covers[1] or title.cover.small_url
+                title.cover.large_url = covers[2] or title.cover.large_url
+
+            await asyncio.sleep(0.1)
+            proxy = await self._proxy_manager.get_value()
+
+        # Save titles to database
+        result = await create_titles_bulk(list(chain(*batches)))
+        if not result:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(101, f"Failed to save titles from page: {value}")
+
+        # Finish processing and reset worker status
+        self.status = WorkerStatus.READY
+        logger.success(
+            f"Worker id_{self.worker_id} successfully processed task(parsing): {value}"
+        )
+
+    async def translate(self, value: int, api_key: str) -> None:
+        """
+        Translate the title and description of a title by its ID.
+        
+        Args:
+            value (int): The ID of the title to translate.
+            api_key (str): The OpenAI API key to use for translation.
+        """
+        self.status = WorkerStatus.WORKING
+
+        # Get title by ID
+        title = await get_title_by_id(value)
+        if not title:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(204, f"Title not found: {value}")
+
+        # Get proxy
+        proxy = await self._proxy_manager.get_value()
+        if not proxy:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(401, "No available proxy for task")
+
+        # Translate data
+        translated_data = await self._translator.translate(
+            {
+                "title": title.name_en,
+                "description": title.description.en or "",
+            },
+            proxy=proxy,
+            openai_api_key=api_key,
+        )
+        if not translated_data:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(201, f"Failed to translate title: {value}")
+
+        # Update title with translated data
+        title.name_ru = translated_data.get("title")
+        title.description = TitleDescription(
+            en=title.description.en,
+            ru=translated_data.get("description"),
+        )
+        result = await upsert_title(title)
+        if not result:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(201, f"Failed to update title(translation): {value}")
+
+        # Finish processing and reset worker status
+        self.status = WorkerStatus.READY
+        logger.success(
+            f"Worker id_{self.worker_id} successfully processed task(translate): {value}"
+        )
+
+    async def update_data(self, value: int) -> None:
+        """
+        Update the title data by its ID.
+        
+        Args:
+            value (int): The ID of the title to update.
+        """
+        self.status = WorkerStatus.WORKING
+
+        # Get proxy
+        proxy = await self._proxy_manager.get_value()
+        if not proxy:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(401, "No available proxy for task")
 
         # Parse title
-        data = await self._mal_client.get_by_id(
-            value,
-            proxy=proxy
-        )
+        data = await self._mal_client.get_by_id(value, proxy=proxy)
         if isinstance(data, int) or data is None:
             self.status = WorkerStatus.ERROR
-            raise WorkerError(data or 400, f"Failed to process task: {value}")
-        
-        # Save covers
-        new_urls = await self._cover_manager.batch_save(
-            [
-                (data.cover.url, "mal", str(data.id), ""),
-                (data.cover.large_url, "mal", str(data.id), "l"),
-                (data.cover.small_url, "mal", str(data.id), "s"),
-            ],
-            proxy=proxy,
-        )
-        data.cover.url = new_urls[0] or data.cover.url
-        data.cover.large_url = new_urls[1] or data.cover.large_url
-        data.cover.small_url = new_urls[2] or data.cover.small_url
+            raise WorkerError(301, f"Failed to process task: {value}")
 
+        # Get title by ID
+        title = await get_title_by_id(value)
+        if not title:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(304, f"Title not found: {value}")
+        
+        title.chapters = data.chapters or title.chapters
+        title.volumes = data.volumes or title.volumes
+        title.views = data.views or title.views
+        title.status = data.status or title.status
+        title.date = data.date or title.date
+        title.rating = data.rating or title.rating
+        title.scored_by = data.scored_by or title.scored_by
+        title.popularity = data.popularity or title.popularity
+        title.favorites = data.favorites or title.favorites
+
+        result = await upsert_title(title)
+
+        if not result:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(301, f"Failed to update title: {value}")
+
+        # Finish processing and reset worker status
         self.status = WorkerStatus.READY
-        self.current_task = None
-        logger.success(f"Worker id_{self.worker_id} successfully processed task: {value}")
+        logger.success(
+            f"Worker id_{self.worker_id} successfully processed task(updating): {value}"
+        )
 
     async def cleanup(self) -> None:
         """Cleanup resources used by the worker."""

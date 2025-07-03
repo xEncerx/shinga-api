@@ -1,1 +1,2 @@
-from .worker import Worker, WorkerStatus, WorkerError
+from .worker import *
+from .global_mal_parser import GlobalMalParser
