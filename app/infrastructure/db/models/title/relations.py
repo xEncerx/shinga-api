@@ -1,5 +1,4 @@
-from sqlmodel import SQLModel, Field
-from datetime import datetime
+from sqlmodel import SQLModel
 from enum import Enum
 
 class TitleGenre(SQLModel):
@@ -13,24 +12,21 @@ class TitleCover(SQLModel):
     large_url: str | None
 
 
+
 class TitleType(str, Enum):
     MANGA = "manga"
     NOVEL = "novel"
-    LIGHT_NOVEL = "lightnovel"
+    LIGHT_NOVEL = "light novel"
     ONESHOT = "one-shot"
-    DOUJIN = "doujin"
+    DOUJIN = "doujinshi"
     MANHWA = "manhwa"
     MANHUA = "manhua"
     WEBTOON = "webtoon"
     OTHER = "other"
 
 class TitleReleaseTime(SQLModel):
-    from_: datetime | None = Field(alias="from")
-    to: datetime | None
-
-    def __init__(self, from_: str, to: str | None = None):
-        self.from_ = datetime.fromisoformat(from_) if from_ else None
-        self.to = datetime.fromisoformat(to) if to else None
+    from_: str | None
+    to: str | None
 
 class TitleDescription(SQLModel):
     en: str | None
@@ -43,6 +39,12 @@ class TitleStatus(str, Enum):
     FROZEN = "on hiatus"
     ANONS = "upcoming"
     UNKNOWN = "unknown"
+
+class SourceProvider(str, Enum):
+    MAL = "mal"
+    REMANGA = "remanga"
+    SHIKIMORI = "shikimori"
+    CUSTOM = "custom"
 
 class Genre:
     @classmethod

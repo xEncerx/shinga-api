@@ -4,14 +4,15 @@ from datetime import datetime, timezone
 from sqlmodel import Enum as SQLEnum
 from typing import Any
 
+from ...sql_types import JSONBWithModel
 from .relations import *
 
 
 class Title(SQLModel, table=True):
     __tablename__ = "titles"  # type: ignore
 
-    id: int = Field(primary_key=True, index=True)
-    cover: TitleCover = Field(sa_type=JSONB)
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    cover: TitleCover = Field(sa_type=JSONBWithModel(TitleCover)) # type: ignore
     name_en: str
     name_ru: str | None
     alt_names: list[str] = Field(sa_type=JSONB)
@@ -21,21 +22,20 @@ class Title(SQLModel, table=True):
     views: int = Field(default=0)
 
     # In app rating
-    in_app_rating: float | None = Field(ge=0, le=10)
-    in_app_scored_by: int | None
+    in_app_rating: float | None = Field(default=0, ge=0, le=10)
+    in_app_scored_by: int | None = Field(default=0)
 
     status: TitleStatus = Field(sa_column=SQLEnum(TitleStatus))  # type: ignore
-    published: bool
-    date: TitleReleaseTime = Field(sa_type=JSONB)
+    date: TitleReleaseTime = Field(sa_type=JSONBWithModel(TitleReleaseTime)) # type: ignore
     # Mal or other providers rating
     rating: float = Field(ge=0, le=10)
 
     scored_by: int
     popularity: int
     favorites: int
-    description: TitleDescription = Field(sa_type=JSONB)
+    description: TitleDescription = Field(sa_type=JSONBWithModel(TitleDescription))  # type: ignore
     authors: list[str] = Field(sa_type=JSONB)
-    genres: list[TitleGenre] = Field(sa_type=JSONB, index=True)
+    genres: list[TitleGenre] = Field(sa_type=JSONBWithModel(TitleGenre), index=True) # type: ignore
 
     # Timestamps for creation and last update
     created_at: datetime = Field(
@@ -54,8 +54,16 @@ class Title(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
+    # Source provider from which the title was fetched
+    source_provider: SourceProvider = Field(
+        default=SourceProvider.MAL,
+        sa_column=SQLEnum(SourceProvider),  # type: ignore
+    )
+    # ID from the source provider
+    source_id: str | None = None
+
     # This field is used to store additional data that may not fit into the predefined fields.
-    extra_data: dict[str, Any] | None = Field(sa_type=JSONB)
+    extra_data: dict[str, Any] | None = Field(default=None, sa_type=JSONB)
 
     # Full-text search vector for efficient searching
     search_vector: str | None = Field(
