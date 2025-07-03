@@ -1,4 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_core import MultiHostUrl
+from datetime import timedelta
+from pathlib import Path
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -8,15 +11,35 @@ class Settings(BaseSettings):
     )
 
     API_URL: str = "http://localhost:8000"
-
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Shinga Api"
-    VERSION: str = "0.1.0"
 
+    # Project settings
+    PROJECT_NAME: str = "Shinga Api"
+    VERSION: str = "0.2.0"
+
+    # Database settings
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str
+    POSTGRES_DB: str
+    POSTGRES_PORT: int = 5432
+
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> MultiHostUrl:
+        return MultiHostUrl.build(
+            scheme="postgresql+asyncpg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
+        )
+
+    # Cover settings
     COVER_STORAGE_PATH: str = "app/api/media/covers"
     COVER_PUBLIC_PATH: str = API_URL + "/api/v1/media/covers"
 
-    OPENAI_API_KEYS: list[str] = []
+    # OpenAI API settings
     OPENAI_API_BASE: str
     OPENAI_API_MODEL: str
 
@@ -28,3 +51,10 @@ class Settings(BaseSettings):
     # Rate limiting
     PROXY_RPS_LIMIT: int = 3
     PROXY_RPM_LIMIT: int = 60
+
+    # Global Title Parser settings
+    QUEUE_UPDATE_INTERVAL: int = 600  # seconds
+    GTP_UPDATE_INTERVAL: timedelta = timedelta(days=1)
+
+    # Core path
+    CORE_PATH: Path = Path(__file__).parent
