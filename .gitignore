@@ -6,3 +6,4 @@ install/
 __pycache__
 app/infrastructure/managers/temp/**
 app/api/media/**
+app/core/*.txt
