@@ -1,2 +1,2 @@
 from .value import ProxyManager, ApiKeyManager
-from .queue import QueueManager
+from .queue import PriorityQueueManager, QueuePriority
