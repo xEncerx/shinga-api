@@ -4,6 +4,6 @@ backups/
 install/
 .idea/
 __pycache__
-app/infrastructure/managers/temp/**
+temp/
 app/api/media/**
 app/core/*.txt
