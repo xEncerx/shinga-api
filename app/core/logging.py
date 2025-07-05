@@ -19,7 +19,7 @@ class InterceptHandler(logging.Handler):
             level, record.getMessage()
         )
 
-def setup_fastapi_logging():
+def setup_fastapi_logging() -> None:
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
     
     uvicorn_loggers = ["uvicorn", "uvicorn.error", "uvicorn.access"]
@@ -28,8 +28,13 @@ def setup_fastapi_logging():
         logging_logger.handlers = [InterceptHandler()]
         logging_logger.propagate = False
 
-def setup_logging():
-    """Sets up the logging configuration for the application."""
+def setup_logging(file_name: str = "") -> None:
+    """
+    Sets up the logging configuration for the application.
+
+    Args:
+        file_name (str): The name of the log file(without .log). If empty, logs will save in .log file.
+    """
     logger.remove()
 
     logger.add(
@@ -40,7 +45,7 @@ def setup_logging():
     )
 
     logger.add(
-        "logs/.log",
+        f"logs/{file_name}.log",
         rotation="10 MB",
         retention="30 days",
         compression="zip",

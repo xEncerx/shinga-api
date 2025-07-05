@@ -9,7 +9,7 @@ import aiofiles
 import asyncio
 import time
 
-from app.core import logger
+from app.core import logger, settings
 
 
 class ValueStatus(Enum):
@@ -73,10 +73,9 @@ class BaseValueManager(ABC):
         self.batch_size = batch_size
 
         # Get DB name from class name and set up database path
-        self.db_name = self.__class__.__name__.lower()
-        self.db_path = Path(__file__).parent.parent / "temp" / "db"
-        self.db_path.mkdir(parents=True, exist_ok=True)
-        self.db_path = self.db_path / f"{self.db_name}.db"
+        self._db_name = self.__class__.__name__.lower()
+        self._db_path = settings.TEMP_PATH / "db" / f"{self._db_name}.db"
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Rate limiting configuration
         self.limits: dict[str, Limit] = {}
@@ -140,11 +139,10 @@ class BaseValueManager(ABC):
 
     async def _init_database(self) -> None:
         """Initialize database table for this manager"""
-        if not self.db_path.exists():
-            async with aiofiles.open(self.db_path, mode="w") as f:
-                pass
-
-        async with aiosqlite.connect(self.db_path) as db:
+        if not self._db_path.exists():
+            async with aiofiles.open(self._db_path, mode="w"): ...
+            
+        async with aiosqlite.connect(self._db_path) as db:
             await db.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS value_manager (
@@ -213,7 +211,7 @@ class BaseValueManager(ABC):
         # First, update cooling statuses
         await self._update_cooling_statuses()
 
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             cursor = await db.execute(
                 f"""
                 SELECT value FROM value_manager 
@@ -285,7 +283,7 @@ class BaseValueManager(ABC):
             datetime.fromtimestamp(cooldown_until) if needs_cooling else None
         )
 
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             await db.execute(
                 f"""
                 UPDATE value_manager
@@ -333,7 +331,7 @@ class BaseValueManager(ABC):
 
     async def _update_cooling_statuses(self) -> None:
         """Update status of values that finished cooling down"""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             await db.execute(
                 f"""
                 UPDATE value_manager
@@ -356,7 +354,7 @@ class BaseValueManager(ABC):
             return
 
         stored_count = 0
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             for value in values:
                 try:
                     await db.execute(
@@ -376,7 +374,7 @@ class BaseValueManager(ABC):
 
     async def remove_value(self, value: str) -> None:
         """Remove a value from the database"""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             await db.execute(f"DELETE FROM value_manager WHERE value = ?", (value,))
             await db.commit()
 
@@ -393,7 +391,7 @@ class BaseValueManager(ABC):
         if not values:
             return
 
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             for i in range(0, len(values), batch_size):
                 batch = values[i : i + batch_size]
                 placeholders = ",".join(["?" for _ in batch])
@@ -410,7 +408,7 @@ class BaseValueManager(ABC):
 
     async def get_stats(self) -> dict[str, Any]:
         """Get statistics with optimized query"""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             # Одним запросом получаем все статистики
             cursor = await db.execute(
                 f"""
@@ -426,15 +424,15 @@ class BaseValueManager(ABC):
             total_count, active_count, cooling_count = row if row else (0, 0, 0)
 
         return {
-            "total_values": total_count,
-            "active_values": active_count,
-            "cooling_values": cooling_count,
+            "total_values": total_count or 0,
+            "active_values": active_count or 0,
+            "cooling_values": cooling_count or 0,
             "limits_configured": len(self.limits),
         }
 
     async def validate_values(self) -> None:
         """Validate all stored values and remove invalid ones"""
-        async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self._db_path) as db:
             cursor = await db.execute(f"SELECT value FROM value_manager")
             values = [row[0] for row in await cursor.fetchall()]
 

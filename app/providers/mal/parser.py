@@ -5,6 +5,7 @@ class MalParser(BaseParserProvider):
     @staticmethod
     def parse(data: dict[str, Any]) -> Title:
         return Title(
+            id=f"{SourceProvider.MAL.name}|{data['mal_id']}",
             cover=TitleCover(
                 url=data["images"]["webp"]["image_url"],
                 small_url=data["images"]["webp"]["small_image_url"],

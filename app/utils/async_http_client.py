@@ -34,7 +34,7 @@ class AsyncHttpClient:
             base_url (str | None): Base URL for all requests. Defaults to None.
             timeout (float): Request timeout in seconds. Defaults to 15.0.
             disable_ssl (bool): Whether to disable SSL verification. Defaults to False.
-            proxy (str | None): Proxy URL to use for requests. Defaults to None.
+            proxy (str | None): Proxy URL to use for requests. Defaults to None. (ONLY HTTP PROXIES)
         """
         self.http_client = ClientSession(
             base_url=base_url,

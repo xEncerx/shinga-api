@@ -29,7 +29,7 @@ async def get_title_by_id(id: int) -> Title | None:
             return None
 
 
-async def get_titles_for_update(time_ago: timedelta) -> list[int]:
+async def get_titles_for_update(time_ago: timedelta) -> list[str]:
     """Fetch all titles that need to be updated."""
     async with get_session() as session:
         try:
@@ -43,13 +43,13 @@ async def get_titles_for_update(time_ago: timedelta) -> list[int]:
                     )
                 ),
             )
-            return list(result.all())
+            return [i for i in result.all() if i is not None]
         except Exception as e:
             logger.error(f"Failed to fetch updatable titles: {e}")
             return []
 
 
-async def get_titles_for_translation() -> list[int]:
+async def get_titles_for_translation() -> list[str]:
     """Fetch all titles that need to translate"""
     async with get_session() as session:
         try:
@@ -62,9 +62,9 @@ async def get_titles_for_translation() -> list[int]:
                         ),
                         Title.source_provider == SourceProvider.MAL,
                     )
-                )
+                ).order_by(Title.popularity.asc()) # type: ignore
             )
-            return list(result.all())
+            return [i for i in result.all() if i is not None]
         except Exception as e:
             logger.error(f"Failed to fetch titles for translation: {e}")
             return []

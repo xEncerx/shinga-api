@@ -3,11 +3,10 @@ from pydantic_core import MultiHostUrl
 from datetime import timedelta
 from pathlib import Path
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file='.env',
-        env_file_encoding='utf-8',
-        extra='ignore'
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
     API_URL: str = "http://localhost:8000"
@@ -37,7 +36,8 @@ class Settings(BaseSettings):
 
     # Cover settings
     COVER_STORAGE_PATH: str = "app/api/media/covers"
-    COVER_PUBLIC_PATH: str = API_URL + "/api/v1/media/covers"
+    COVER_PUBLIC_PATH: str = "/media/covers"
+    COVER_404_URL: str = "/media/covers/404.webp"
 
     # OpenAI API settings
     OPENAI_API_BASE: str
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     PROXY_FETCH_INTERVAL: int = 3600  # 1 hour
     PROXY_VALIDATION_INTERVAL: int = 1800  # 30 minutes
     PROXY_SOURCES: list[str] | None = None
-    
+
     # Rate limiting
     PROXY_RPS_LIMIT: int = 3
     PROXY_RPM_LIMIT: int = 60
@@ -56,5 +56,6 @@ class Settings(BaseSettings):
     QUEUE_UPDATE_INTERVAL: int = 600  # seconds
     GTP_UPDATE_INTERVAL: timedelta = timedelta(days=1)
 
-    # Core path
+    # PATH
+    TEMP_PATH: Path = Path(__file__).parent.parent.parent / "temp"
     CORE_PATH: Path = Path(__file__).parent

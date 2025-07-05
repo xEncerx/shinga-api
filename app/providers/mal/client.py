@@ -1,5 +1,3 @@
-from aiohttp.client_exceptions import ClientResponseError
-
 from app.domain.models import TitlePagination
 from ..base_provider import BaseProvider, Title
 from .parser import MalParser
@@ -20,7 +18,7 @@ class MalProvider(BaseProvider):
         """Async context manager entry."""
         return self
 
-    async def get_by_id(self, id: int, proxy: str | None = None) -> Title | int | None:  # type: ignore
+    async def get_by_id(self, id: int, proxy: str | None = None) -> Title | None:  # type: ignore
         """
         Fetch title data by ID from MyAnimeList.
 
@@ -29,7 +27,7 @@ class MalProvider(BaseProvider):
             proxy (str | None): Optional proxy URL for the request.
 
         Returns:
-            Title | int | None: Parsed title data if successful, HTTP status code if an error occurs, or None if no data is found.
+            Title | None: Parsed title data if successful or None if no data is found or an error occurs.
 
         """
         try:
@@ -39,8 +37,6 @@ class MalProvider(BaseProvider):
                 return
 
             return MalParser.parse(data["data"])
-        except ClientResponseError as e:
-            return e.status
         except Exception as e:
             logger.error(f"Error fetching data from MAL for ID {id}: {e}")
             return
@@ -57,6 +53,7 @@ class MalProvider(BaseProvider):
         Args:
             page (int): The page number to fetch.
             limit (int): The number of titles per page (default is 25).
+            proxy (str | None): Optional proxy URL for the request.
 
         Returns:
             TitlePagination: A pagination object containing the list of titles and pagination info.
@@ -75,6 +72,6 @@ class MalProvider(BaseProvider):
                 return TitlePagination()
 
             return MalParser.parse_page(data)
-        except ClientResponseError as e:
+        except Exception as e:
             logger.error(f"Error fetching page from MAL: {e}")
             return TitlePagination()

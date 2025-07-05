@@ -8,6 +8,7 @@ import asyncio
 
 class QueuePriority(int, Enum):
     """Priority levels for queues."""
+
     HIGH = 1
     MEDIUM = 2
     LOW = 3
@@ -26,6 +27,7 @@ class QueueConfig:
         min_workers: Minimum number of workers required for this queue
         max_workers: Maximum number of workers allowed for this queue (optional)
     """
+
     name: str
     priority: QueuePriority
     queue: asyncio.Queue
@@ -52,7 +54,7 @@ class PriorityQueueManager:
 
         self._running = False
         self._monitor_task: asyncio.Task | None = None
-        self._max_available_workers = len(workers)
+        self.max_available_workers = len(workers)
 
     def register_queue(
         self,
@@ -61,7 +63,7 @@ class PriorityQueueManager:
         priority: QueuePriority,
         handler: Callable,
         min_workers: int = 1,
-        max_workers: int | None = None
+        max_workers: int | None = None,
     ) -> None:
         """
         Register a new queue with the manager.
@@ -97,7 +99,7 @@ class PriorityQueueManager:
         for i, worker in enumerate(self.workers):
             if hasattr(worker, "status") and worker.status.name == "READY":
                 available.append(i)
-        return available[:self._max_available_workers]
+        return available[: self.max_available_workers]
 
     def _get_queue_sizes(self) -> dict[str, int]:
         """
@@ -129,8 +131,7 @@ class PriorityQueueManager:
             return {}
 
         sorted_queues = sorted(
-            non_empty_queues.items(),
-            key=lambda x: self.queues[x[0]].priority.value
+            non_empty_queues.items(), key=lambda x: self.queues[x[0]].priority.value
         )
 
         distribution = {}
@@ -139,12 +140,12 @@ class PriorityQueueManager:
         for queue_name, _ in sorted_queues:
             if remaining_workers <= 0:
                 break
-                
+
             config = self.queues[queue_name]
             alloc = min(config.min_workers, remaining_workers)
             if config.max_workers is not None:
                 alloc = min(alloc, config.max_workers)
-                
+
             if alloc > 0:
                 distribution[queue_name] = alloc
                 remaining_workers -= alloc
@@ -155,42 +156,49 @@ class PriorityQueueManager:
                 QueuePriority.MEDIUM: [],
                 QueuePriority.LOW: [],
             }
-            
+
             for queue_name, _ in sorted_queues:
                 priority = self.queues[queue_name].priority
                 priority_groups[priority].append(queue_name)
 
-            for priority in [QueuePriority.HIGH, QueuePriority.MEDIUM, QueuePriority.LOW]:
+            for priority in [
+                QueuePriority.HIGH,
+                QueuePriority.MEDIUM,
+                QueuePriority.LOW,
+            ]:
                 if not priority_groups[priority] or remaining_workers <= 0:
                     continue
-                    
+
                 weight = 1 / (priority.value * 0.5)
                 workers_for_group = min(
-                    int(remaining_workers * weight),
-                    remaining_workers
+                    int(remaining_workers * weight), remaining_workers
                 )
-                
+
                 if workers_for_group <= 0:
                     continue
-                    
+
                 workers_per_queue = workers_for_group // len(priority_groups[priority])
                 remainder = workers_for_group % len(priority_groups[priority])
-                
+
                 for i, queue_name in enumerate(priority_groups[priority]):
                     current = distribution.get(queue_name, 0)
                     config = self.queues[queue_name]
-                    
-                    available_slot = max(0, config.max_workers - current) if config.max_workers else float('inf')
-                    
+
+                    available_slot = (
+                        max(0, config.max_workers - current)
+                        if config.max_workers
+                        else float("inf")
+                    )
+
                     to_add = workers_per_queue + (1 if i < remainder else 0)
                     to_add = min(to_add, available_slot, remaining_workers)
-                    
+
                     if to_add <= 0:
                         continue
-                        
+
                     distribution[queue_name] = distribution.get(queue_name, 0) + to_add
                     remaining_workers -= to_add
-                    
+
                     if remaining_workers <= 0:
                         break
                 if remaining_workers <= 0:
@@ -222,6 +230,7 @@ class PriorityQueueManager:
             logger.error(
                 f"Error assigning worker {worker_idx} to queue {queue_name}: {e}"
             )
+            raise e
         finally:
             self.worker_assignments[worker_idx] = None
 
@@ -324,8 +333,8 @@ class PriorityQueueManager:
         Args:
             limit (int): Maximum number of workers to make available
         """
-        self._max_available_workers = max(1, limit)
-        
+        self.max_available_workers = max(1, limit)
+
     def reset_worker_limit(self) -> None:
         """Reset worker limit to total number of workers."""
-        self._max_available_workers = len(self.workers)
+        self.max_available_workers = len(self.workers)
