@@ -125,59 +125,9 @@ class CoverManger(AsyncHttpClient):
         image_url: str | None,
         provider: str,
         content_id: str,
-        size_type: Literal["", "s", "l"] = "",
         force_redownload: bool = False,
         proxy: str | None = None,
-    ) -> str | None:
-        """
-        Download, process and save a cover image.
-
-        Args:
-            image_url str | None: URL of the source image
-            provider (str): Provider name (e.g., "mal", "shiki")
-            content_id (str): Unique content identifier
-            size_type (str): Size variant - "" (original = 225x319), "s" (small = 112x160), "l" (large = 423x600)
-            force_redownload (bool): Whether to overwrite existing files
-            proxy (str | None): Optional proxy URL for HTTP requests
-
-        :return: Public URL of the saved cover, or None if processing failed
-        """
-        if not image_url:
-            return
-
-        filename = self._generate_filename(provider, content_id, size_type)
-        filepath = self.storage_path / filename
-
-        if filepath.exists() and not force_redownload:
-            return f"{settings.COVER_PUBLIC_PATH}/{filename}"
-
-        target_size = self.SIZE_MAP[size_type]
-
-        try:
-            image_data = await self._download_image(image_url, proxy=proxy)
-            if not image_data:
-                return
-
-            processed_data = self._process_image(image_data, target_size)
-
-            async with aiofiles.open(filepath, "wb") as f:
-                await f.write(processed_data)
-
-            return f"{settings.COVER_PUBLIC_PATH}/{filename}"
-
-        except Exception as e:
-            if filepath.exists():
-                filepath.unlink()
-            raise RuntimeError(f"Failed to process cover: {str(e)}")
-
-    async def save_cover_all_size(
-        self,
-        image_url: str | None,
-        provider: str,
-        content_id: str,
-        force_redownload: bool = False,
-        proxy: str | None = None,
-    ) -> list[str | None]:
+    ) -> list[str]:
         """
         Process a single image into all three size variants and save them.
 
@@ -191,15 +141,27 @@ class CoverManger(AsyncHttpClient):
         :return: List of public URLs for all three size variants in order [original, small, large]
         """
         if not image_url:
-            return [None, None, None]
+            return [settings.COVER_404_URL] * 3
+
+        # Empty image in MAL
+        if image_url.endswith("apple-touch-icon-256.png"):
+            return [settings.COVER_404_URL] * 3
+
+        filename = self._generate_filename(provider, content_id, "l")
+        filepath = self.storage_path / filename
+        if filepath.exists() and not force_redownload:
+            return [
+                f"{settings.COVER_PUBLIC_PATH}/{self._generate_filename(provider, content_id, size_name)}"  # type: ignore
+                for size_name in self.SIZE_MAP.keys()
+            ]
 
         image_data = await self._download_image(image_url, proxy=proxy)
         if not image_data:
-            return [None, None, None]
+            return [settings.COVER_404_URL] * 3
 
         result = []
-        for name, size in self.SIZE_MAP.items():
-            filename = self._generate_filename(provider, content_id, name)  # type: ignore
+        for size_name, size in self.SIZE_MAP.items():
+            filename = self._generate_filename(provider, content_id, size_name)  # type: ignore
             filepath = self.storage_path / filename
 
             if filepath.exists() and not force_redownload:
@@ -217,7 +179,7 @@ class CoverManger(AsyncHttpClient):
                 logger.error(f"Failed to process cover size {size}: {str(e)}")
                 if filepath.exists():
                     filepath.unlink()
-                result.append(None)
+                result.append(settings.COVER_404_URL)
 
         return result
 
@@ -226,7 +188,7 @@ class CoverManger(AsyncHttpClient):
         images: list[tuple[str | None, str, str]],
         force_redownload: bool = False,
         proxy: str | None = None,
-    ) -> list[list[str | None]]:
+    ) -> list[list[str]]:
         """
         Batch process and save multiple cover images.
 
@@ -238,7 +200,7 @@ class CoverManger(AsyncHttpClient):
         :return: List of lists containing public URLs for each image in all three sizes
         """
         tasks = [
-            self.save_cover_all_size(image_url, provider, content_id, force_redownload, proxy)
+            self.save_cover(image_url, provider, content_id, force_redownload, proxy)
             for image_url, provider, content_id in images
         ]
         return await asyncio.gather(*tasks)

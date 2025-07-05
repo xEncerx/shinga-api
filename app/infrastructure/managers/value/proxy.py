@@ -9,6 +9,8 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
     """
     Proxy manager that handles proxy fetching, validation, and rate limiting.
 
+    **SUPPORT ONLY HTTP PROXIES**
+
     This manager:
     - Fetches proxies from free proxy sources
     - Validates proxies by making test requests
@@ -18,11 +20,11 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
 
     def __init__(
         self,
-        validation_interval: int = 300,
-        fetch_interval: int = 600,
+        validation_interval: int = 600, # 10 minutes
+        fetch_interval: int = 1200, # 20 minutes
         batch_validation: bool = True,
         batch_size: int = 1000,
-        validation_timeout: int = 3,
+        validation_timeout: int = 4,
         test_url: str = "http://example.com",
     ):
         """
@@ -51,7 +53,7 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
 
         self._test_url = test_url
 
-        self._proxies_file = settings.CORE_PATH / "proxies.txt"     
+        self._proxies_file = settings.CORE_PATH / "proxies.txt"
 
         # Configure rate limits
         # Example: 3 requests per second, 60 requests per minute
@@ -101,34 +103,23 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
         await self.http_client.close()
         return await super().cleanup()
 
-    async def _fetch_from_public_proxy_list(self, url: str) -> list[str]:
-        """Fetch proxies from public proxy list"""
-        proxies = []
-
-        try:
-            response = await self.get(
-                url=url,
-                response_type="text",
-                timeout=ClientTimeout(total=15)
-            )
-            for line in response.splitlines():
-                if ":" not in line:
-                    continue
-                if line.startswith("http://"):
-                    proxies.append(line.strip())
-                elif line:
-                    proxies.append(f"http://{line.strip()}")
-        except Exception as e:
-            logger.error(f"Error fetching from {url}: {e}")
-
-        return proxies
-    
     async def _fetch_from_file(self) -> list[str]:
         if not self._proxies_file.exists():
-            async with aiofiles.open(self._proxies_file, "w"): ...
+            async with aiofiles.open(self._proxies_file, "w") as f:
+                await f.write(
+                    "# Add your proxies here in the format http://ip:port OR http://username:password@ip:port\n" \
+                    "# ONLY HTTP PROXIES ARE SUPPORTED",
+                )
             return []
-        
-        async with aiofiles.open(self._proxies_file, mode='r') as f:
+
+        async with aiofiles.open(self._proxies_file, mode="r") as f:
             content = await f.read()
 
-        return [line for i in content.splitlines() if (line := i.strip())]
+        proxies = []
+        for line in content.splitlines():
+            if ":" not in line:
+                continue
+            if line.startswith("http://"):
+                proxies.append(line.strip())
+
+        return proxies
