@@ -2,12 +2,13 @@ from enum import Enum, auto
 from itertools import chain
 import asyncio
 
-from app.infrastructure.db.models import TitleDescription
+from app.infrastructure.db.models import TitleDescription, TitleCover
 from app.domain.services.translation import Translator
 from app.infrastructure.managers import ProxyManager
 from app.infrastructure.storage import CoverManger
 from app.infrastructure.db.crud import *
 from app.providers import MalProvider
+from app.utils import TaskTracker
 from app.core import logger
 
 
@@ -65,7 +66,7 @@ class Worker:
     async def parsing(self, value: int) -> None:
         """
         Parse a page of titles from MyAnimeList and save their covers.
-        
+
         Args:
             value (int): Page number to parse titles from.
         """
@@ -79,6 +80,10 @@ class Worker:
 
         # Parse page of titles
         page = await self._mal_client.get_page(page=value, proxy=proxy)
+
+        if not page.data:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(101, f"Cant parse data from page: {value}")
 
         # Save covers for titles in batches
         batch_size = 10
@@ -95,9 +100,11 @@ class Worker:
             )
             # Update titles with new cover URLs
             for title, covers in zip(batch, images_data):
-                title.cover.url = covers[0] or title.cover.url
-                title.cover.small_url = covers[1] or title.cover.small_url
-                title.cover.large_url = covers[2] or title.cover.large_url
+                title.cover = TitleCover(
+                    url=covers[0],
+                    small_url=covers[1],
+                    large_url=covers[2],
+                )
 
             await asyncio.sleep(0.1)
             proxy = await self._proxy_manager.get_value()
@@ -107,6 +114,9 @@ class Worker:
         if not result:
             self.status = WorkerStatus.ERROR
             raise WorkerError(101, f"Failed to save titles from page: {value}")
+        
+        # Mark tasks as done in TaskTracker
+        await TaskTracker.mark_done(value, "global_mal_parser_tasks")
 
         # Finish processing and reset worker status
         self.status = WorkerStatus.READY
@@ -117,7 +127,7 @@ class Worker:
     async def translate(self, value: int, api_key: str) -> None:
         """
         Translate the title and description of a title by its ID.
-        
+
         Args:
             value (int): The ID of the title to translate.
             api_key (str): The OpenAI API key to use for translation.
@@ -169,11 +179,23 @@ class Worker:
     async def update_data(self, value: int) -> None:
         """
         Update the title data by its ID.
-        
+
         Args:
             value (int): The ID of the title to update.
         """
         self.status = WorkerStatus.WORKING
+
+        # Get title by ID
+        title = await get_title_by_id(value)
+        if not title:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(304, f"Title not found: {value}")
+
+        if title.source_provider != SourceProvider.MAL:
+            raise WorkerError(
+                306,
+                f"Provider: {title.source_provider.name} is not supported for update",
+            )
 
         # Get proxy
         proxy = await self._proxy_manager.get_value()
@@ -181,27 +203,25 @@ class Worker:
             self.status = WorkerStatus.ERROR
             raise WorkerError(401, "No available proxy for task")
 
+        if not title.source_id:
+            self.status = WorkerStatus.ERROR
+            raise WorkerError(304, f"Title source_id not found: {value}")
+
         # Parse title
-        data = await self._mal_client.get_by_id(value, proxy=proxy)
-        if isinstance(data, int) or data is None:
+        data = await self._mal_client.get_by_id(int(title.source_id), proxy=proxy)
+        if data is None:
             self.status = WorkerStatus.ERROR
             raise WorkerError(301, f"Failed to process task: {value}")
 
-        # Get title by ID
-        title = await get_title_by_id(value)
-        if not title:
-            self.status = WorkerStatus.ERROR
-            raise WorkerError(304, f"Title not found: {value}")
-        
-        title.chapters = data.chapters or title.chapters
-        title.volumes = data.volumes or title.volumes
-        title.views = data.views or title.views
-        title.status = data.status or title.status
-        title.date = data.date or title.date
-        title.rating = data.rating or title.rating
-        title.scored_by = data.scored_by or title.scored_by
-        title.popularity = data.popularity or title.popularity
-        title.favorites = data.favorites or title.favorites
+        title.chapters = data.chapters
+        title.volumes = data.volumes
+        title.views = data.views
+        title.status = data.status
+        title.date = data.date
+        title.rating = data.rating
+        title.scored_by = data.scored_by
+        title.popularity = data.popularity
+        title.favorites = data.favorites
 
         result = await upsert_title(title)
 

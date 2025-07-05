@@ -5,6 +5,7 @@ from app.infrastructure.db.crud import *
 from app.infrastructure.parser import *
 from app.providers import MalProvider
 from app.core import logger, settings
+from app.utils import TaskTracker
 from ..managers import *
 
 
@@ -29,9 +30,13 @@ class GlobalMalParser:
         self._queue_manager = PriorityQueueManager(workers=self.workers)
 
         self._class = __class__.__name__
+        self._num_workers = num_workers
         self._idle_task: asyncio.Task | None = None
 
-    def _register_queues(self) -> None:
+    def _register_queues(
+        self,
+        max_translation_workers: int = 1,
+    ) -> None:
         """Register queues with the queue manager."""
         self._queue_manager.register_queue(
             name="parsing_queue",
@@ -44,8 +49,7 @@ class GlobalMalParser:
             queue=self._translation_queue,
             priority=QueuePriority.MEDIUM,
             handler=self._handle_translation_task,
-            min_workers=2,
-            max_workers=2,
+            max_workers=max_translation_workers,
         )
         self._queue_manager.register_queue(
             name="update_queue",
@@ -62,6 +66,8 @@ class GlobalMalParser:
             worker (Worker): The worker instance handling the task.
             data (Any): The data to be parsed, typically a page number from MAL.
         """
+        await self._try_unlimit_workers()
+
         try:
             await worker.parsing(data)
         except WorkerError as e:
@@ -80,6 +86,8 @@ class GlobalMalParser:
             worker (Worker): The worker instance handling the task.
             data (Any): The data to be translated, typically a title ID.
         """
+        await self._try_unlimit_workers()
+
         try:
             api_key = await self._api_key_manager.get_value()
             if not api_key:
@@ -105,6 +113,8 @@ class GlobalMalParser:
             worker (Worker): The worker instance handling the task.
             data (Any): The data to be updated, typically a title ID.
         """
+        await self._try_unlimit_workers()
+
         try:
             await worker.update_data(data)
         except WorkerError as e:
@@ -140,19 +150,9 @@ class GlobalMalParser:
             f"Worker id_{worker.worker_id} encountered an error: {error.message} (Status Code: {error.status_code})"
         )
 
-        if error.status_code == 101:
+        if error.status_code in [101, 201, 301]:
             logger.warning(
-                f"Worker id_{worker.worker_id} cant save titles to DB. Retrying later."
-            )
-            await queue.put(data)
-        elif error.status_code == 201:
-            logger.warning(
-                f"Worker id_{worker.worker_id} cant translate title. Retrying later."
-            )
-            await queue.put(data)
-        elif error.status_code == 301:
-            logger.warning(
-                f"Worker id_{worker.worker_id} cant update title. Retrying later."
+                f"Error in  Worker id_{worker.worker_id}: {error.message}. Retrying later."
             )
             await queue.put(data)
         elif error.status_code == 401:
@@ -163,20 +163,20 @@ class GlobalMalParser:
             await asyncio.sleep(5)  # Wait before retrying
             await queue.put(data)
 
-        if self._queue_manager._max_available_workers == 1:
-            # Reset worker limit if too many active proxies
-            proxy_stats_data = await self._proxy_manager.get_stats()
-            if proxy_stats_data.get("active_values", 0) > 5:
-                logger.warning(
-                    f"Worker id_{worker.worker_id} has too many active proxies. Resetting worker limit."
-                )
-                self._queue_manager.reset_worker_limit()
-
         worker.status = WorkerStatus.READY
 
+    async def _try_unlimit_workers(self) -> None:
+        """Reset worker limit if too many active proxies"""
+        if self._queue_manager.max_available_workers != self._num_workers:
+            proxy_stats_data = await self._proxy_manager.get_stats()
+            if proxy_stats_data["active_values"] > 5:
+                logger.info(f"Resetting worker limit.")
+                self._queue_manager.reset_worker_limit()
+
     async def load_parsing_queue(self) -> None:
-        """ Load pages into the parsing queue based on the last processed ID."""
-        last_db_id = await get_last_id()
+        """Load pages into the parsing queue based on the last processed ID."""
+        self._clear_queue(self._parsing_queue)
+
         async with MalProvider() as mal:
             last_page = (
                 await mal.get_page(
@@ -185,14 +185,20 @@ class GlobalMalParser:
                 )
             ).pagination.last_visible_page
 
-        start = last_db_id // 25 + 1
-        for page in range(start, last_page + 1):
+        tasks = await TaskTracker.get_missing_tasks(
+            range(1, last_page + 1),
+            table="global_mal_parser_tasks",
+        )
+
+        for page in tasks:
             await self._parsing_queue.put(page)
 
-        logger.info(f"Loaded {last_page - start + 1} pages into the parsing queue.")
+        logger.info(f"Loaded {len(tasks)} pages into the parsing queue.")
 
     async def load_translation_queue(self) -> None:
         """Load titles into the translation queue that need translation."""
+        self._clear_queue(self._translation_queue)
+
         titles = await get_titles_for_translation()
         for title_id in titles:
             await self._translation_queue.put(title_id)
@@ -201,6 +207,8 @@ class GlobalMalParser:
 
     async def load_update_queue(self) -> None:
         """Load titles into the update queue that need updating."""
+        self._clear_queue(self._update_queue)
+
         titles = await get_titles_for_update(
             time_ago=settings.GTP_UPDATE_INTERVAL,
         )
@@ -218,7 +226,7 @@ class GlobalMalParser:
                 logger.info(f"{self._class}: Running update queue cycle...")
 
                 # Update queues
-                # await self.load_parsing_queue()
+                await self.load_parsing_queue()
                 await self.load_update_queue()
                 await self.load_translation_queue()
 
@@ -264,8 +272,13 @@ class GlobalMalParser:
         await self._proxy_manager.fetch_and_store_values()
         await self._proxy_manager.validate_values()
 
+        # Get api_key_manager stats
+        api_key_stats = await self._api_key_manager.get_stats()
+
         # Register queues with the queue manager
-        self._register_queues()
+        self._register_queues(
+            max_translation_workers=api_key_stats["total_values"],
+        )
 
         # Load initial queues
         await self.load_parsing_queue()
@@ -298,3 +311,13 @@ class GlobalMalParser:
         """Exit the context manager and clean up resources."""
         await self.stop()
         logger.info(f"{self._class} finished")
+
+    @staticmethod
+    def _clear_queue(queue: asyncio.Queue) -> None:
+        """Clear the specified queue."""
+        while not queue.empty():
+            try:
+                queue.get_nowait()
+                queue.task_done()
+            except:
+                break
