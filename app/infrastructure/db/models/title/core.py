@@ -11,7 +11,7 @@ from .relations import *
 class Title(SQLModel, table=True):
     __tablename__ = "titles"  # type: ignore
 
-    id: int | None = Field(default=None, primary_key=True, index=True)
+    id: str = Field(primary_key=True, index=True)
     cover: TitleCover = Field(sa_type=JSONBWithModel(TitleCover)) # type: ignore
     name_en: str
     name_ru: str | None
