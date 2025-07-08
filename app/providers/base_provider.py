@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
-from ..infrastructure.db.models import Title
+from app.infrastructure.db.models import Title
+from app.domain.models import TitlePagination
 from app.utils import AsyncHttpClient
 
 
@@ -29,8 +30,28 @@ class BaseProvider(ABC, AsyncHttpClient):
         )
 
     @abstractmethod
-    async def get_by_id(id: int | str, proxy: str | None) -> Title | None:  # type: ignore
+    async def get_by_id(self, id: int | str, proxy: str | None = None) -> Title | None:
         """
         Method for retrieving title data from a specified provider by id.
         """
-        pass
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+    @abstractmethod
+    async def get_page(
+        self,
+        page: int,
+        limit: int = 25,
+        proxy: str | None = None,
+    ) -> TitlePagination:
+        """
+        Method for retrieving a page of titles from a specified provider.
+
+        Args:
+            page (int): The page number to fetch.
+            limit (int): The number of titles per page (default is 25).
+            proxy (str | None): Optional proxy URL for the request.
+
+        Returns:
+            TitlePagination: A pagination object containing the list of titles and pagination info.
+        """
+        raise NotImplementedError("This method should be implemented by subclasses.")
