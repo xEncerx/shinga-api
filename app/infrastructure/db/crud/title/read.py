@@ -1,4 +1,5 @@
-from sqlmodel import select, func, and_, text, or_
+from sqlmodel import select, text, or_, and_
+from sqlalchemy import func
 from datetime import datetime, timedelta
 
 from ...session import get_session
@@ -7,19 +8,7 @@ from ...models import *
 from app.core import logger
 
 
-async def get_last_id() -> int:
-    """Fetch the last ID from the Titles table."""
-    async with get_session() as session:
-        try:
-            result = await session.exec(select(func.max(Title.id)))
-            last_id = result.first()
-            return last_id if last_id is not None else 0
-        except Exception as e:
-            logger.error(f"Failed to get last title ID: {e}")
-            return 0
-
-
-async def get_title_by_id(id: int) -> Title | None:
+async def get_title_by_id(id: str) -> Title | None:
     """Fetch a title by its ID."""
     async with get_session() as session:
         try:
@@ -35,13 +24,7 @@ async def get_titles_for_update(time_ago: timedelta) -> list[str]:
         try:
             now_time = datetime.now()
             result = await session.exec(
-                select(Title.id).where(
-                    and_(
-                        Title.status != TitleStatus.FINISHED,
-                        Title.updated_at < now_time - time_ago,
-                        Title.source_provider == SourceProvider.MAL,
-                    )
-                ),
+                select(Title.id).where(Title.updated_at < now_time - time_ago),
             )
             return [i for i in result.all() if i is not None]
         except Exception as e:
@@ -49,22 +32,35 @@ async def get_titles_for_update(time_ago: timedelta) -> list[str]:
             return []
 
 
-async def get_titles_for_translation() -> list[str]:
-    """Fetch all titles that need to translate"""
+async def search_titles_by_name(
+    query: str,
+    limit: int = 1,
+) -> list[Title]:
+    """
+    Search for titles by their name using full-text search.
+
+    Args:
+        query (str): The search query string.
+        limit (int): The maximum number of results to return.
+
+    Returns:
+        list[Title]: A list of Title objects that match the search query.
+    """
+    words = query.strip().split()
+    if not words:
+        return []
+
     async with get_session() as session:
-        try:
-            result = await session.exec(
-                select(Title.id).where(
-                    and_(
-                        or_(
-                            Title.name_ru == None,
-                            text("description->>'ru' IS NULL"),
-                        ),
-                        Title.source_provider == SourceProvider.MAL,
-                    )
-                ).order_by(Title.popularity.asc()) # type: ignore
-            )
-            return [i for i in result.all() if i is not None]
-        except Exception as e:
-            logger.error(f"Failed to fetch titles for translation: {e}")
-            return []
+        words[-1] = words[-1] + ":*"
+        tsquery_str = " & ".join(words)
+        tsquery = func.to_tsquery("russian", tsquery_str)
+
+        statement = (
+            select(Title)
+            .where(Title.search_vector.op("@@")(tsquery))  # type: ignore
+            .order_by(func.ts_rank(Title.search_vector, tsquery).desc())
+            .limit(limit)
+        )
+
+        data = await session.exec(statement)
+        return data.all()  # type: ignore
