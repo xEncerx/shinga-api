@@ -3,7 +3,8 @@ from pathlib import Path
 from PIL import Image
 import aiofiles
 import asyncio
-import base64
+import hashlib
+# import base64
 import io
 
 from app.core import settings, logger
@@ -45,7 +46,7 @@ class CoverManger(AsyncHttpClient):
         await super().__aenter__()
         return self
 
-    def _generate_filename(
+    def generate_filename(
         self,
         provider: str,
         content_id: str,
@@ -55,15 +56,18 @@ class CoverManger(AsyncHttpClient):
         Generating a file name using a template: provider_id_size.webp
 
         Args:
-            provider (str): Provider ID (mal, shiki, etc)
+            provider (str): Provider name (mal, shiki, etc)
             content_id (str): Provider's content ID
             size (str): Size: "" (original), "s" (small), "l" (large)
 
-        :return: Generated filename in base32 format with .webp extension
+        :return: Generated filename in sha1 format with .webp extension
         """
         raw_name = f"{provider}_{content_id}_{size}".strip("_")
-        encoded = base64.b32encode(raw_name.encode()).decode().lower()
-        return encoded.rstrip("=") + ".webp"
+        encoded = hashlib.sha1(raw_name.encode()).hexdigest()[:12]
+        return f"{encoded}.webp"
+
+        # encoded = base64.b32encode(raw_name.encode()).decode().lower()
+        # return encoded.rstrip("=") + ".webp"
 
     async def _download_image(
         self,
@@ -147,11 +151,11 @@ class CoverManger(AsyncHttpClient):
         if image_url.endswith("apple-touch-icon-256.png"):
             return [settings.COVER_404_URL] * 3
 
-        filename = self._generate_filename(provider, content_id, "l")
+        filename = self.generate_filename(provider, content_id, "l")
         filepath = self.storage_path / filename
         if filepath.exists() and not force_redownload:
             return [
-                f"{settings.COVER_PUBLIC_PATH}/{self._generate_filename(provider, content_id, size_name)}"  # type: ignore
+                f"{settings.COVER_PUBLIC_PATH}/{self.generate_filename(provider, content_id, size_name)}"  # type: ignore
                 for size_name in self.SIZE_MAP.keys()
             ]
 
@@ -161,7 +165,7 @@ class CoverManger(AsyncHttpClient):
 
         result = []
         for size_name, size in self.SIZE_MAP.items():
-            filename = self._generate_filename(provider, content_id, size_name)  # type: ignore
+            filename = self.generate_filename(provider, content_id, size_name)  # type: ignore
             filepath = self.storage_path / filename
 
             if filepath.exists() and not force_redownload:
