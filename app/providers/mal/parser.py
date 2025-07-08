@@ -14,10 +14,11 @@ class MalParser(BaseParserProvider):
             name_en=data["title"],
             name_ru=None,
             alt_names=data["title_synonyms"],
-            type_=TitleType(data["type"].lower()),
+            type_=TypeConverter.from_mal(data["type"]),
             chapters=data["chapters"] or 0,
             volumes=data["volumes"] or 0,
-            status=TitleStatus(data["status"].lower()),
+            views=0,  # MAL does not provide views
+            status=StatusConverter.from_mal(data["status"]),
             date=TitleReleaseTime(
                 from_=data["published"]["from"],
                 to=data["published"].get("to", None),
@@ -32,15 +33,15 @@ class MalParser(BaseParserProvider):
                 genre
                 for key in ("genres", "themes")
                 for item in data.get(key, [])
-                if (genre := Genre.get(item["name"])) is not None
+                if (genre := TitleGenre.get(item["name"])) is not None
             ],
             source_provider=SourceProvider.MAL,
             source_id=str(data["mal_id"]),
         )
 
-    @staticmethod
-    def parse_page(data: dict[str, Any]) -> TitlePagination:
+    @classmethod
+    def parse_page(cls, data: dict[str, Any]) -> TitlePagination:
         return TitlePagination(
             pagination=Pagination(**data["pagination"]),
-            data=[MalParser.parse(item) for item in data["data"]],
+            data=[cls.parse(item) for item in data["data"]],
         )
