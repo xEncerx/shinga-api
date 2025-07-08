@@ -114,7 +114,7 @@ class Worker:
         if not result:
             self.status = WorkerStatus.ERROR
             raise WorkerError(101, f"Failed to save titles from page: {value}")
-        
+
         # Mark tasks as done in TaskTracker
         await TaskTracker.mark_done(value, "global_mal_parser_tasks")
 
@@ -124,7 +124,7 @@ class Worker:
             f"Worker id_{self.worker_id} successfully processed task(parsing): {value}"
         )
 
-    async def translate(self, value: int, api_key: str) -> None:
+    async def translate(self, value: str, api_key: str) -> None:
         """
         Translate the title and description of a title by its ID.
 
@@ -176,7 +176,7 @@ class Worker:
             f"Worker id_{self.worker_id} successfully processed task(translate): {value}"
         )
 
-    async def update_data(self, value: int) -> None:
+    async def update_data(self, value: str) -> None:
         """
         Update the title data by its ID.
 
