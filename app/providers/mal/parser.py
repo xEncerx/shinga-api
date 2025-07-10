@@ -12,12 +12,10 @@ class MalParser(BaseParserProvider):
                 large_url=data["images"]["webp"]["large_image_url"],
             ),
             name_en=data["title"],
-            name_ru=None,
             alt_names=data["title_synonyms"],
             type_=TypeConverter.from_mal(data["type"]),
             chapters=data["chapters"] or 0,
             volumes=data["volumes"] or 0,
-            views=0,  # MAL does not provide views
             status=StatusConverter.from_mal(data["status"]),
             date=TitleReleaseTime(
                 from_=data["published"]["from"],

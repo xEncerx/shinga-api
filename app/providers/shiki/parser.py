@@ -25,7 +25,6 @@ class ShikiParser(BaseParserProvider):
             type_=TypeConverter.from_shiki(data["kind"]),
             chapters=data.get("chapters", 0) or 0,
             volumes=data.get("volumes", 0) or 0,
-            views=0, # Shikimori does not provide views
             status=StatusConverter.from_shiki(data["status"]),
             date=TitleReleaseTime(
                 from_=f"{date}T00:00:00+00:00" if (date := data["airedOn"]["date"]) else None,
@@ -33,7 +32,6 @@ class ShikiParser(BaseParserProvider):
             ),
             rating=data.get("score", 0.0) or 0.0,
             scored_by=sum(i["count"] for i in data["scoresStats"]),
-            popularity=0,
             favorites=sum(i["count"] for i in data["statusesStats"]),
             description=TitleDescription(en=None, ru=data.get("description")),
             authors=[

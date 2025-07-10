@@ -21,7 +21,6 @@ class RemangaParser(BaseParserProvider):
             ),
             type_=TypeConverter.from_remanga(data["type"]["name"]),
             chapters=data.get("count_chapters") or 0,
-            volumes=0,  # Remanga does not provide volume count
             views=data.get("total_views") or 0,
             status=StatusConverter.from_remanga(data["status"]["name"]),
             date=TitleReleaseTime(
@@ -30,17 +29,14 @@ class RemangaParser(BaseParserProvider):
                     if (date := data["issue_year"])
                     else None
                 ),
-                to=None,  # Remanga does not provide end date
             ),
             rating=float(data["avg_rating"] or 0),
             scored_by=data.get("count_rating") or 0,
-            popularity=0,  # Remanga does not provide popularity
             favorites=data.get("count_bookmarks") or 0,
             description=TitleDescription(
                 en=None,
                 ru=tag_remover(desc) if (desc := data.get("description")) else None,
             ),
-            authors=[],  # Remanga does not provide authors
             genres=[
                 x
                 for genre in data["genres"]

@@ -13,13 +13,13 @@ class Title(SQLModel, table=True):
 
     id: str = Field(primary_key=True, index=True)
     cover: TitleCover = Field(sa_type=JSONBWithModel(TitleCover))  # type: ignore
-    name_en: str
-    name_ru: str | None
-    alt_names: list[str] = Field(sa_type=JSONB)
+    name_en: str | None = Field(default=None)
+    name_ru: str | None = Field(default=None)
+    alt_names: list[str] = Field(default=[], sa_type=JSONB)
     type_: TitleType = Field(sa_column=SQLEnum(TitleType))  # type: ignore
-    chapters: int
-    volumes: int
-    views: int
+    chapters: int = Field(default=0)
+    volumes: int = Field(default=0)
+    views: int = Field(default=0)
 
     # In app rating
     in_app_rating: float | None = Field(default=0, ge=0, le=10)
@@ -30,11 +30,11 @@ class Title(SQLModel, table=True):
     # Mal or other providers rating
     rating: float = Field(ge=0, le=10)
 
-    scored_by: int
-    popularity: int
-    favorites: int
-    description: TitleDescription = Field(sa_type=JSONBWithModel(TitleDescription))  # type: ignore
-    authors: list[str] = Field(sa_type=JSONB)
+    scored_by: int = Field(default=0)
+    popularity: int = Field(default=0)
+    favorites: int = Field(default=0)
+    description: TitleDescription = Field(sa_type=JSONBWithModel(TitleDescription)) # type: ignore
+    authors: list[str] = Field(default=[], sa_type=JSONB)
     genres: list[TitleGenre] = Field(
         sa_column=Column(
             ARRAY(SQLEnum(TitleGenre)),

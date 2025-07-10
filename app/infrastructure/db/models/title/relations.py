@@ -11,9 +11,9 @@ class Genre(BaseModel):
 
 
 class TitleCover(SQLModel):
-    url: str | None
-    small_url: str | None
-    large_url: str | None
+    url: str | None = Field(default=None)
+    small_url: str | None = Field(default=None)
+    large_url: str | None = Field(default=None)
 
 
 class TitleType(str, Enum):
@@ -31,13 +31,13 @@ class TitleType(str, Enum):
 
 
 class TitleReleaseTime(SQLModel):
-    from_: str | None = Field(description="Release start date in ISO 8601 format")
-    to: str | None = Field(description="Release end date in ISO 8601 format, if applicable")
+    from_: str | None = Field(default=None, description="Release start date in ISO 8601 format")
+    to: str | None = Field(default=None, description="Release end date in ISO 8601 format, if applicable")
 
 
 class TitleDescription(SQLModel):
-    en: str | None
-    ru: str | None
+    en: str | None = Field(default=None)
+    ru: str | None = Field(default=None)
 
 
 class TitleStatus(str, Enum):

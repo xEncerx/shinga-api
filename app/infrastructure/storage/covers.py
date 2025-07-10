@@ -4,6 +4,7 @@ from PIL import Image
 import aiofiles
 import asyncio
 import hashlib
+
 # import base64
 import io
 
@@ -145,11 +146,11 @@ class CoverManger(AsyncHttpClient):
         :return: List of public URLs for all three size variants in order [original, small, large]
         """
         if not image_url:
-            return [settings.COVER_404_URL] * 3
+            return [settings.COVER_404_PATH] * 3
 
         # Empty image in MAL
         if image_url.endswith("apple-touch-icon-256.png"):
-            return [settings.COVER_404_URL] * 3
+            return [settings.COVER_404_PATH] * 3
 
         filename = self.generate_filename(provider, content_id, "l")
         filepath = self.storage_path / filename
@@ -161,7 +162,7 @@ class CoverManger(AsyncHttpClient):
 
         image_data = await self._download_image(image_url, proxy=proxy)
         if not image_data:
-            return [settings.COVER_404_URL] * 3
+            return [settings.COVER_404_PATH] * 3
 
         result = []
         for size_name, size in self.SIZE_MAP.items():
@@ -183,7 +184,7 @@ class CoverManger(AsyncHttpClient):
                 logger.error(f"Failed to process cover size {size}: {str(e)}")
                 if filepath.exists():
                     filepath.unlink()
-                result.append(settings.COVER_404_URL)
+                result.append(settings.COVER_404_PATH)
 
         return result
 
