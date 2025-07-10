@@ -16,12 +16,30 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Shinga Api"
     VERSION: str = "0.2.0"
 
+    # JWT settings
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24 * 60  # 30 days
+
+    # OAuth settings
+    # --- YANDEX ---
+    YANDEX_CLIENT_ID: str
+    YANDEX_CLIENT_SECRET: str
+    YANDEX_REDIRECT_URI: str = f"{API_URL}{API_V1_STR}/auth/yandex/callback"
+    # --- GOOGLE ---
+
     # Database settings
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_HOST: str
     POSTGRES_DB: str
     POSTGRES_PORT: int = 5432
+
+    # SMTP settings
+    SMTP_SERVER: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> MultiHostUrl:
@@ -34,10 +52,11 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
-    # Cover settings
+    # Media settings
     COVER_STORAGE_PATH: str = "app/api/media/covers"
     COVER_PUBLIC_PATH: str = "/media/covers"
-    COVER_404_URL: str = "/media/covers/404.webp"
+    COVER_404_PATH: str = "/media/covers/404.webp"
+    DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"
 
     # OpenAI API settings
     OPENAI_API_BASE: str
