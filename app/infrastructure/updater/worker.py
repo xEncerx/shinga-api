@@ -89,10 +89,7 @@ class UpdateWorker:
 
             match title.source_provider:
                 case SourceProvider.REMANGA:
-                    new_title = await self._remanga_client.get_by_id(
-                        title.source_id,
-                        proxy="http://thufkb4:thufkb4@109.61.108.145:3128",
-                    )
+                    new_title = await self._remanga_client.get_by_id(title.source_id)
                 case SourceProvider.SHIKIMORI:
                     new_title = await self._shiki_client.get_by_id(
                         title.source_id, proxy=proxy
@@ -179,7 +176,8 @@ class UpdateWorker:
                 proxy=proxy,
             )
 
-            if not data: return
+            if not data:
+                return
 
             if "description" in data:
                 title.description = TitleDescription(
@@ -202,8 +200,9 @@ class UpdateWorker:
                 openai_api_key=api_key,
                 proxy=proxy,
             )
-            
-            if not data: return
+
+            if not data:
+                return
 
             if "description" in data:
                 title.description = TitleDescription(
