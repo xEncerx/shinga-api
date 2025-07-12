@@ -28,6 +28,14 @@ class Settings(BaseSettings):
     YANDEX_REDIRECT_URI: str = f"{API_URL}{API_V1_STR}/auth/yandex/callback"
     # --- GOOGLE ---
 
+    # Redis settings
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str | None = None
+
+    # Redis cache settings
+    RESET_CODE_TTL: int = 15 * 60 # 15 minutes
+
     # Database settings
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
@@ -54,6 +62,7 @@ class Settings(BaseSettings):
 
     # Media settings
     COVER_STORAGE_PATH: str = "app/api/media/covers"
+    AVATAR_STORAGE_PATH: str = "app/api/media/avatars"
     COVER_PUBLIC_PATH: str = "/media/covers"
     COVER_404_PATH: str = "/media/covers/404.webp"
     DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"

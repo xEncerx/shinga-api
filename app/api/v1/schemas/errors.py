@@ -33,10 +33,17 @@ class TitleRelatedError(BaseAPIException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "Title related error"
 
+# Base class for OAuth-related exceptions
 class OAuthError(BaseAPIException):
     """OAuth error exception."""
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "OAuth error"
+
+# Base class for email-related exceptions
+class EmailError(BaseAPIException):
+    """Email error exception."""
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Email error"
 
 # --- User exceptions ---
 class UserAlreadyExists(UserRelatedError):
@@ -50,6 +57,7 @@ class UserNotFound(UserRelatedError):
 class UserNotAuthorized(UserRelatedError):
     status_code = status.HTTP_401_UNAUTHORIZED
     detail = "User not authorized"
+    headers = {"WWW-Authenticate": "Bearer"}
 
 class PasswordTooWeak(UserRelatedError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -58,8 +66,27 @@ class PasswordTooWeak(UserRelatedError):
 class InvalidUserCredentials(UserRelatedError):
     status_code = status.HTTP_401_UNAUTHORIZED
     detail = "Invalid user credentials"
+    headers = {"WWW-Authenticate": "Bearer"}
 
 # --- Title exceptions ---
 class TitleNotFound(TitleRelatedError):
     status_code = status.HTTP_404_NOT_FOUND
     detail = "Title not found"
+
+# --- Email exceptions ---
+class EmailNotSent(EmailError):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    detail = "Email could not be sent"
+
+class EmailAlreadySent(EmailError):
+    status_code = status.HTTP_409_CONFLICT
+    detail = "Email already sent"
+
+class EmailCodeMismatch(EmailError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Email code mismatch"
+
+# --- Other exceptions ---
+class ValidationError(BaseAPIException):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = "Validation error"

@@ -1,14 +1,89 @@
-from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import APIRouter, Depends
-from typing import Annotated
+from fastapi import APIRouter, Request
 
-from app.infrastructure.db.crud.user import authenticate
-from ...schemas import Token, UserNotFound
+from app.domain.models.exceptions import UserNotFoundError
+from app.domain.use_cases import reset_user_password
+from app.domain.services import EmailService
+from app.api.v1.schemas import Message
+from app.core.security import *
+from ...schemas import *
+from app.core import *
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(prefix="/password")
 
-async def forgot_password():
-    pass
 
-async def reset_password():
-    pass
+@router.post("/forgot")
+@limiter.limit("2/minute;10/day")
+async def forgot_password(
+    forgot_form: ForgotPasswordForm,
+    request: Request,
+):
+    """
+    Sends a password reset code to the user's email.
+
+    **Limits the request to 2 per minute and 10 per day.**
+
+    Args:
+        forgot_form (ForgotPasswordForm): Form containing the user's email.
+
+    Returns:
+        Message: Confirmation message indicating the reset code has been sent.
+
+    Raises:
+        EmailNotSent: If the email could not be sent.
+    """
+    email = forgot_form.email
+    code = generate_code()
+
+    await redis.setex(f"reset_code:{email}", settings.RESET_CODE_TTL, code)
+    result = await EmailService.send_password_reset_email(
+        recipient_email=email, reset_code=code
+    )
+    if result:
+        return Message(message="Reset code sent to your email.")
+    else:
+        raise EmailNotSent(detail="Failed to send reset code email.")
+
+
+@router.post("/reset")
+@limiter.limit("2/minute;10/day")
+async def reset_password(
+    restore_form: UserPasswordRestore,
+    request: Request,
+):
+    """
+    Resets the user's password using the provided reset code.
+
+    **Limits the request to 2 per minute and 10 per day.**
+
+    Args:
+        restore_form (UserPasswordRestore): Form containing the user's email,
+            reset code, and new password.
+    Returns:
+        Message: Confirmation message indicating the password has been reset.
+
+    Raises:
+        UserNotFound: If the user with the provided email does not exist.
+        EmailNotSent: If the reset code is not found or has expired.
+        EmailCodeMismatch: If the provided reset code does not match the stored code.
+        PasswordTooWeak: If the new password does not meet strength requirements.
+    """
+
+    stored_code = await redis.get(f"reset_code:{restore_form.email}")
+
+    if not stored_code:
+        raise EmailNotSent(detail="Reset code not found or expired.")
+    if stored_code.decode() != restore_form.code:
+        raise EmailCodeMismatch(detail="Reset code does not match.")
+    if not is_password_strong(restore_form.new_password):
+        raise PasswordTooWeak()
+
+    try:
+        await redis.delete(f"reset_code:{restore_form.email}")
+        await reset_user_password(
+            email=restore_form.email,
+            new_password=restore_form.new_password,
+        )
+
+        return Message(message="Password reset successfully.")
+    except UserNotFoundError:
+        raise UserNotFound()
