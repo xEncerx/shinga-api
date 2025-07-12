@@ -7,7 +7,7 @@ from fastapi import Depends
 import jwt
 
 from .v1.schemas import TokenPayload, InvalidUserCredentials, UserNotFound
-from app.infrastructure.db.session import get_session
+from app.infrastructure.db.crud.user import get_user
 from app.infrastructure.db.models import User
 from app.core import settings, security
 
@@ -16,11 +16,10 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-async def get_current_user(session: SessionDep, token: TokenDep) -> User:
+async def get_current_user(token: TokenDep) -> User:
     """
     Retrieve the current authenticated user from the token.
     Args:
@@ -43,11 +42,19 @@ async def get_current_user(session: SessionDep, token: TokenDep) -> User:
     except (InvalidTokenError, ValidationError):
         raise InvalidUserCredentials()
 
-    user = await session.get(User, {"username": token_data.sub})
+    user = await get_user(user_id=token_data.sub)
     if not user:
         raise UserNotFound()
 
     return user
 
+async def get_superuser(token: TokenDep) -> User:
+    user = await get_current_user(token)
+    if not user.is_superuser:
+        raise UserNotFound(detail="Superuser privileges required.")
+    
+    return user
+
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+SuperUserDep = Annotated[User, Depends(get_superuser)]
