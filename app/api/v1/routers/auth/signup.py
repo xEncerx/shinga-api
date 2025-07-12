@@ -5,13 +5,12 @@ from app.core.security import is_password_strong, get_password_hash
 from app.domain.use_cases import create_user
 from ...schemas import *
 
-router = APIRouter(tags=["auth"])
+router = APIRouter()
 
 @router.post("/signup")
 async def signup(user_in: UserIn) -> Message:
     """
     Sign up a new user.
-    This endpoint allows users to create a new account by providing a username, email, and password.
 
     Args:
         user_in (UserIn): User input data containing username, email, and password.

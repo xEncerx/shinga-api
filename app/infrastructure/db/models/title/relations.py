@@ -54,7 +54,7 @@ class TitleStatus(str, Enum):
 class SourceProvider(str, Enum):
     MAL = "mal"
     REMANGA = "remanga"
-    SHIKIMORI = "shiki"
+    SHIKIMORI = "shikimori"
     CUSTOM = "custom"
 
 

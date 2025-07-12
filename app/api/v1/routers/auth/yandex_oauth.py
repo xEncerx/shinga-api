@@ -2,14 +2,14 @@ from fastapi.responses import RedirectResponse
 from fastapi import APIRouter
 
 from app.domain.models.exceptions import UserAlreadyExistsError
-from app.infrastructure.db.crud.user import oauth_user_exists
 from ...schemas import Token, OAuthError, UserAlreadyExists
+from app.infrastructure.db.crud.user import get_user
 from app.core.security import create_access_token
 from app.domain.use_cases import create_user
 from app.core.oauth import *
 from app.core import logger
 
-router = APIRouter(prefix=f"/yandex", tags=["auth"])
+router = APIRouter(prefix=f"/yandex")
 
 
 @router.get("/login")
@@ -41,24 +41,26 @@ async def auth_callback(access_token_state=YandexCallbackDep):
     token, _ = access_token_state
     if "access_token" not in token:
         raise OAuthError(detail="Access token not found in the response.")
-    
-    user = await yandex_oauth.get_profile(token=token["access_token"])
 
-    if not user.email:
+    yandex_data = await yandex_oauth.get_profile(token=token["access_token"])
+
+    if not yandex_data.email:
         raise OAuthError(
             detail="Yandex OAuth profile does not contain an email address."
         )
 
-    if not await oauth_user_exists(yandex_id=user.id):
+    user = await get_user(yandex_id=yandex_data.id)
+    if not user:
         try:
-            await create_user(
-                username=user.email,
-                email=user.email,
-                yandex_id=user.id,
+            user = await create_user(
+                username=yandex_data.email,
+                email=yandex_data.email,
+                yandex_id=yandex_data.id,
             )
         except UserAlreadyExistsError as e:
             raise UserAlreadyExists(detail=e.message)
         except Exception as e:
             logger.error(f"Failed to create user: {e}")
+            raise OAuthError(detail="Failed to create user from Yandex profile.")
 
-    return Token(access_token=create_access_token(subject=user.id))
+    return Token(access_token=create_access_token(subject=user.id))  # type: ignore

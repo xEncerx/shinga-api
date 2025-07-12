@@ -51,8 +51,8 @@ class UserTitles(SQLModel, table=True):
     username: str = Field(foreign_key="users.username", index=True, primary_key=True)
     title_id: str = Field(foreign_key="titles.id", index=True, primary_key=True)
 
-    user_rating: int = Field(default=0, ge=0, le=10)
-    current_url: str | None = Field(default=None)
+    user_rating: int = Field(ge=0, le=10)
+    current_url: str | None
     bookmark: BookMarkType = Field(default=BookMarkType.NOT_READING, sa_column=SQLEnum(BookMarkType))  # type: ignore
     updated_at: datetime = Field(
         sa_column=Column(
@@ -64,4 +64,4 @@ class UserTitles(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
-    extra_data: dict[str, Any] | None = Field(default=None, sa_type=JSONB)
+    extra_data: dict[str, Any] | None = Field(sa_type=JSONB)

@@ -3,7 +3,6 @@ from typing import Any
 from app.infrastructure.db.crud.user import *
 from app.domain.models.exceptions import *
 from app.core.security import *
-from app.core import settings
 
 
 async def create_user(
@@ -15,7 +14,7 @@ async def create_user(
     extra_data: dict[str, Any] | None = None,
     is_stuff: bool = False,
     is_superuser: bool = False,
-) -> None:
+) -> User:
     """
     Create a new user with the provided details.
 
@@ -30,9 +29,9 @@ async def create_user(
         is_stuff (bool): Whether the user is a staff member. Defaults to False.
         is_superuser (bool): Whether the user is a superuser. Defaults to False.
     """
-    if not await is_username_available(username):
+    if await get_user(username=username):
         raise UserAlreadyExistsError(f"Username '{username}' is already taken.")
-    if not await is_email_available(email):
+    if await get_user(email=email):
         raise UserAlreadyExistsError(f"Email '{email}' is already registered.")
 
     if google_id or yandex_id or not password:
@@ -50,3 +49,5 @@ async def create_user(
         yandex_id=yandex_id,
     )
     await persist_user(user)
+    
+    return user

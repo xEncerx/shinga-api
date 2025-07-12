@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from typing import Any
 import secrets
-import random
 import jwt
 import re
 
@@ -48,6 +47,6 @@ def generate_random_password(length: int = 12) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def generate_code(size: int = 6) -> str:
-    """Generate a random numeric code of specified size."""
-    return str(random.randint(10 ** (size - 1), 10**size - 1))
+def generate_code() -> str:
+    """Generate a random numeric code"""
+    return f"{secrets.randbelow(10**6):06d}"

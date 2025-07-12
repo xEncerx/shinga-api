@@ -8,4 +8,4 @@ class Token(BaseModel):
 
 # Contents of JWT token
 class TokenPayload(BaseModel):
-    sub: str
+    sub: int  # Subject (user ID)
