@@ -18,3 +18,14 @@ async def persist_user(user: User) -> bool:
         except Exception as e:
             logger.error(f"Failed to insert title: {e}")
             return False
+
+async def upsert_user_title(user_title: UserTitles) -> bool:
+    """Insert or update a user title in the database."""
+    async with get_session() as session:
+        try:
+            await session.merge(user_title)
+            await session.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to upsert user_title: {e}")
+            return False

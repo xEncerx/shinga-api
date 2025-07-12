@@ -1,6 +1,7 @@
 from sqlmodel import select, text, or_, and_
-from sqlalchemy import func
 from datetime import datetime, timedelta
+from sqlalchemy import func
+from typing import Any
 
 from ...session import get_session
 from ...models import *
@@ -35,16 +36,26 @@ async def get_titles_for_update(time_ago: timedelta) -> list[str]:
 async def search_titles_by_name(
     query: str,
     limit: int = 1,
-) -> list[Title]:
+    username: str | None = None,
+):
     """
-    Search for titles by their name using full-text search.
+    Search for titles by their name using full-text search and return user-specific data if available.
 
     Args:
         query (str): The search query string.
         limit (int): The maximum number of results to return.
+        username (str | None): The username for user-specific data.
 
     Returns:
-        list[Title]: A list of Title objects that match the search query.
+        A dictionary formatted as follows
+        ```
+        [
+            {
+                "title": {Title as dict},
+                "user_data": {UserTitles as dict} | None
+            }
+        ]
+        ```
     """
     words = query.strip().split()
     if not words:
@@ -56,11 +67,25 @@ async def search_titles_by_name(
         tsquery = func.to_tsquery("russian", tsquery_str)
 
         statement = (
-            select(Title)
+            select(Title, UserTitles)
+            .outerjoin(
+                UserTitles,
+                and_(
+                    UserTitles.title_id == Title.id,
+                    UserTitles.username == username,
+                ),
+            )
             .where(Title.search_vector.op("@@")(tsquery))  # type: ignore
             .order_by(func.ts_rank(Title.search_vector, tsquery).desc())
             .limit(limit)
         )
 
         data = await session.exec(statement)
-        return data.all()  # type: ignore
+        rows = data.all()
+        return [
+            {
+                "title": title.model_dump(),
+                "user_data": user_titles.model_dump() if user_titles else None,
+            }
+            for title, user_titles in rows
+        ]
