@@ -1,6 +1,6 @@
 """initial
 
-Revision ID: 79bdd5942c16
+Revision ID: 1514ef7d6f17
 Revises: 
 Create Date: 2025-07-09 19:10:46.015622
 
@@ -15,7 +15,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '79bdd5942c16'
+revision: str = '1514ef7d6f17'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -258,6 +258,77 @@ def upgrade() -> None:
         EXECUTE FUNCTION update_ratings_trigger();
     """)
 
+    op.execute("""
+    CREATE OR REPLACE FUNCTION update_user_bookmarks_count()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        -- Обработка INSERT
+        IF TG_OP = 'INSERT' THEN
+            UPDATE users 
+            SET count_bookmarks = jsonb_set(
+                jsonb_set(
+                    COALESCE(count_bookmarks, '{}'::jsonb),
+                    '{total}',
+                    to_jsonb(COALESCE((count_bookmarks->>'total')::int, 0) + 1)
+                ),
+                ARRAY[LOWER(NEW.bookmark::text)],
+                to_jsonb(COALESCE((count_bookmarks->>LOWER(NEW.bookmark::text))::int, 0) + 1)
+            )
+            WHERE username = NEW.username;
+            
+            RETURN NEW;
+        END IF;
+        
+        -- Обработка UPDATE
+        IF TG_OP = 'UPDATE' THEN
+            -- Если bookmark изменился
+            IF OLD.bookmark != NEW.bookmark THEN
+                UPDATE users 
+                SET count_bookmarks = jsonb_set(
+                    jsonb_set(
+                        COALESCE(count_bookmarks, '{}'::jsonb),
+                        ARRAY[LOWER(OLD.bookmark::text)],  -- Явное приведение к text
+                        to_jsonb(GREATEST(COALESCE((count_bookmarks->>LOWER(OLD.bookmark::text))::int, 0) - 1, 0))
+                    ),
+                    ARRAY[LOWER(NEW.bookmark::text)],  -- Явное приведение к text
+                    to_jsonb(COALESCE((count_bookmarks->>LOWER(NEW.bookmark::text))::int, 0) + 1)
+                )
+                WHERE username = NEW.username;
+            END IF;
+            
+            RETURN NEW;
+        END IF;
+        
+        -- Обработка DELETE
+        IF TG_OP = 'DELETE' THEN
+            UPDATE users 
+            SET count_bookmarks = jsonb_set(
+                jsonb_set(
+                    COALESCE(count_bookmarks, '{}'::jsonb),
+                    '{total}',
+                    to_jsonb(GREATEST(COALESCE((count_bookmarks->>'total')::int, 0) - 1, 0))
+                ),
+                ARRAY[LOWER(OLD.bookmark::text)],  -- Явное приведение к text
+                to_jsonb(GREATEST(COALESCE((count_bookmarks->>LOWER(OLD.bookmark::text))::int, 0) - 1, 0))
+            )
+            WHERE username = OLD.username;
+            
+            RETURN OLD;
+        END IF;
+        
+        RETURN NULL;
+    END;
+    $$ LANGUAGE plpgsql;   
+    """)
+
+    op.execute("""
+    CREATE TRIGGER trigger_update_user_bookmarks_count
+        AFTER INSERT OR UPDATE OR DELETE
+        ON user_titles
+        FOR EACH ROW
+        EXECUTE FUNCTION update_user_bookmarks_count();
+    """)
+
     # ### end Alembic commands ###
 
 
@@ -280,10 +351,12 @@ def downgrade() -> None:
     # Drop triggers first
     op.execute("DROP TRIGGER IF EXISTS title_search_vector_update ON titles")
     op.execute("DROP TRIGGER IF EXISTS rating_update_trigger ON user_titles")
+    op.execute("DROP TRIGGER IF EXISTS trigger_update_user_bookmarks_count ON user_titles")
     
     # Then drop functions
     op.execute("DROP FUNCTION IF EXISTS update_title_search_vector()")
     op.execute("DROP FUNCTION IF EXISTS update_ratings_trigger()")
+    op.execute("DROP FUNCTION IF EXISTS update_user_bookmarks_count();")
     
     # Finally drop indexes and extension
     op.execute("DROP INDEX IF EXISTS idx_title_search_vector")
