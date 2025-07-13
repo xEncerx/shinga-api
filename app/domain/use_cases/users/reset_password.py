@@ -4,6 +4,7 @@ from app.infrastructure.db.crud.user import *
 from app.domain.models.exceptions import *
 from app.core.security import *
 
+
 async def reset_user_password(email: EmailStr, new_password: str) -> None:
     """
     Resets the user's password.
@@ -19,6 +20,5 @@ async def reset_user_password(email: EmailStr, new_password: str) -> None:
     user = await UserCRUD.read.user(email=email)
     if not user:
         raise UserNotFoundError()
-    
-    user.hashed_password = hashed_password
-    await UserCRUD.update.fields(user.id, hashed_password=hashed_password) # type: ignore
+
+    await UserCRUD.update.fields(user.id, hashed_password=hashed_password)  # type: ignore

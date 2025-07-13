@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 
 from app.domain.models.exceptions import UserAlreadyExistsError
-from app.core.security import is_password_strong, get_password_hash
+from app.core.security import is_password_strong
 from app.domain.use_cases import create_user
 from ...schemas import *
 
 router = APIRouter()
+
 
 @router.post("/signup")
 async def signup(user_in: UserIn) -> Message:
@@ -30,7 +31,7 @@ async def signup(user_in: UserIn) -> Message:
         await create_user(
             username=user_in.username,
             email=user_in.email,
-            password=get_password_hash(user_in.password)
+            password=user_in.password,
         )
 
         return Message(message="User created successfully")

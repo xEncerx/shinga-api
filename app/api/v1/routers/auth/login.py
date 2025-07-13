@@ -2,8 +2,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends
 from typing import Annotated
 
+from ...schemas import Token, IncorrectUsernameOrPassword
 from app.infrastructure.db.crud import UserCRUD
-from ...schemas import Token, UserNotFound
 from app.core.security import *
 
 router = APIRouter()
@@ -28,9 +28,6 @@ async def login_access_token(
     user = await UserCRUD.read.user(username=form_data.username)
 
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise UserNotFound(
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise IncorrectUsernameOrPassword()
 
     return Token(access_token=create_access_token(user.id))

@@ -1,6 +1,7 @@
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 
+
 def exception_handler(_: Request, exc: HTTPException):
     """
     Built-in exception handler for HTTP exceptions.
@@ -17,4 +18,5 @@ def exception_handler(_: Request, exc: HTTPException):
             "error": exc.__class__.__name__,
             "detail": exc.detail,
         },
+        headers=exc.headers,
     )

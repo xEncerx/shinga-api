@@ -1,3 +1,6 @@
+from fastapi_cache.coder import PickleCoder
+from fastapi_cache.decorator import cache
+
 from datetime import datetime, timedelta
 from sqlmodel import select, and_
 from sqlalchemy import func
@@ -10,6 +13,7 @@ from app.core import logger
 
 class ReadOperations:
     @staticmethod
+    @cache(expire=30 * 60, coder=PickleCoder)
     async def by_id(id: str) -> Title | None:
         """Fetch a title by its ID."""
         async with get_session() as session:
