@@ -2,10 +2,10 @@ from enum import Enum, auto
 from itertools import chain
 import asyncio
 
-from app.infrastructure.db.models import TitleDescription, TitleCover
 from app.domain.services.translation import Translator
 from app.infrastructure.managers import ProxyManager
 from app.infrastructure.storage import CoverManger
+from app.infrastructure.db.models import *
 from app.infrastructure.db.crud import *
 from app.providers import MalProvider
 from app.utils import TaskTracker
@@ -110,7 +110,7 @@ class Worker:
             proxy = await self._proxy_manager.get_value()
 
         # Save titles to database
-        result = await create_titles_bulk(list(chain(*batches)))
+        result = await TitleCRUD.create.bulk(list(chain(*batches)))
         if not result:
             self.status = WorkerStatus.ERROR
             raise WorkerError(101, f"Failed to save titles from page: {value}")
@@ -135,7 +135,7 @@ class Worker:
         self.status = WorkerStatus.WORKING
 
         # Get title by ID
-        title = await get_title_by_id(value)
+        title = await TitleCRUD.read.by_id(value)
         if not title:
             self.status = WorkerStatus.ERROR
             raise WorkerError(204, f"Title not found: {value}")
@@ -149,7 +149,7 @@ class Worker:
         # Translate data
         translated_data = await self._translator.translate(
             {
-                "title": title.name_en,
+                "title": title.name_en, # type: ignore
                 "description": title.description.en or "",
             },
             proxy=proxy,
@@ -165,7 +165,7 @@ class Worker:
             en=title.description.en,
             ru=translated_data.get("description"),
         )
-        result = await upsert_title(title)
+        result = await TitleCRUD.create.upsert(title)
         if not result:
             self.status = WorkerStatus.ERROR
             raise WorkerError(201, f"Failed to update title(translation): {value}")
@@ -186,7 +186,7 @@ class Worker:
         self.status = WorkerStatus.WORKING
 
         # Get title by ID
-        title = await get_title_by_id(value)
+        title = await TitleCRUD.read.by_id(value)
         if not title:
             self.status = WorkerStatus.ERROR
             raise WorkerError(304, f"Title not found: {value}")
@@ -223,7 +223,7 @@ class Worker:
         title.popularity = data.popularity
         title.favorites = data.favorites
 
-        result = await upsert_title(title)
+        result = await TitleCRUD.create.upsert(title)
 
         if not result:
             self.status = WorkerStatus.ERROR

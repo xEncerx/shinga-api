@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+import asyncio
 
 from app.domain.models.exceptions import UserNotFoundError
 from app.domain.use_cases import reset_user_password
@@ -35,13 +36,14 @@ async def forgot_password(
     code = generate_code()
 
     await redis.setex(f"reset_code:{email}", settings.RESET_CODE_TTL, code)
-    result = await EmailService.send_password_reset_email(
-        recipient_email=email, reset_code=code
+
+    asyncio.create_task(
+        EmailService.send_password_reset_email(
+            recipient_email=email, reset_code=code
+        )
     )
-    if result:
-        return Message(message="Reset code sent to your email.")
-    else:
-        raise EmailNotSent(detail="Failed to send reset code email.")
+
+    return Message(message="Reset code sent to your email.")
 
 
 @router.post("/reset")

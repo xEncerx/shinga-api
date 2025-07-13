@@ -5,12 +5,14 @@ from ..base_parser import *
 class RemangaParser(BaseParserProvider):
     @staticmethod
     def parse(data: dict[str, Any]) -> Title:
+        cover = data["cover"]
+
         return Title(
             id=f"{SourceProvider.REMANGA.name}|{data['id']}",
             cover=TitleCover(
-                url="https://remanga.org" + data["cover"]["mid"],
-                small_url="https://remanga.org" + data["cover"]["low"],
-                large_url="https://remanga.org" + data["cover"]["high"],
+                url="https://remanga.org" + cover["mid"] if "mid" in cover else None,
+                small_url="https://remanga.org" + cover["low"] if "low" in cover else None,
+                large_url="https://remanga.org" + cover["high"] if "high" in cover else None,
             ),
             name_en=data["secondary_name"],
             name_ru=data["main_name"],

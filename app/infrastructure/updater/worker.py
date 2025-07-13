@@ -1,8 +1,9 @@
 from enum import Enum, auto
+import asyncio
 
-from app.infrastructure.db.models import TitleDescription
 from app.domain.services.translation import Translator
 from app.infrastructure.storage import CoverManger
+from app.infrastructure.db.models import *
 from app.infrastructure.managers import *
 from app.infrastructure.db.crud import *
 from app.core import logger, Language
@@ -70,15 +71,13 @@ class UpdateWorker:
         self.status = UpdWorkerStatus.WORKING
 
         try:
-            logger.info(f"Worker {self.id}: Starting to process title {title_id}")
-
             proxy = await self._proxy_manager.get_value()
             if not proxy:
                 raise UpdateWorkerError(
                     title_id, "No available proxies for the worker."
                 )
 
-            title = await get_title_by_id(title_id)
+            title = await TitleCRUD.read.by_id(title_id)
             if not title:
                 raise UpdateWorkerError(
                     title_id,
@@ -133,6 +132,7 @@ class UpdateWorker:
                 ru=new_title.description.ru or title.description.ru,
             )
             title.genres = new_title.genres or title.genres
+            title.updated_at = new_title.updated_at
 
             # api_key = await self._api_key_manager.get_value()
             # if api_key:
@@ -141,8 +141,9 @@ class UpdateWorker:
             #         api_key=api_key,
             #         proxy=proxy,
             #     )
+            #     await asyncio.sleep(8)  # Rate limit for translation API
 
-            result = await upsert_title(title)
+            result = await TitleCRUD.create.upsert(title)
             if not result:
                 raise UpdateWorkerError(
                     title.id, f"Failed to update title {title.id} in the database."

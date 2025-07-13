@@ -1,3 +1,5 @@
+from aiohttp import ClientTimeout
+
 from ..base_provider import *
 from .parser import RemangaParser
 from app.core import logger
@@ -64,6 +66,7 @@ class RemangaProvider(BaseProvider):
             data = await self.get(
                 url=f"v2/search/catalog/?page={page}&count={limit}",
                 proxy=proxy,
+                timeout=ClientTimeout(total=100)
             )
 
             if not data or not data["results"]:

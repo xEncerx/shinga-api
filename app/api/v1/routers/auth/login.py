@@ -2,7 +2,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends
 from typing import Annotated
 
-from app.infrastructure.db.crud.user import get_user
+from app.infrastructure.db.crud import UserCRUD
 from ...schemas import Token, UserNotFound
 from app.core.security import *
 
@@ -25,7 +25,7 @@ async def login_access_token(
     Raises:
         UserNotFound: If the user is not found or the credentials are incorrect.
     """
-    user = await get_user(username=form_data.username)
+    user = await UserCRUD.read.user(username=form_data.username)
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise UserNotFound(

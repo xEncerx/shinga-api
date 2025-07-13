@@ -61,8 +61,8 @@ class Settings(BaseSettings):
         )
 
     # Media settings
-    COVER_STORAGE_PATH: str = "app/api/media/covers"
-    AVATAR_STORAGE_PATH: str = "app/api/media/avatars"
+    COVER_STORAGE_PATH: str = "C:/Users/encer/OneDrive/Dokumente/shinga-media/media/covers"
+    AVATAR_STORAGE_PATH: str = "C:/Users/encer/OneDrive/Dokumente/shinga-media/media/avatars"
     COVER_PUBLIC_PATH: str = "/media/covers"
     COVER_404_PATH: str = "/media/covers/404.webp"
     DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"
@@ -74,15 +74,10 @@ class Settings(BaseSettings):
     # Proxy settings
     PROXY_FETCH_INTERVAL: int = 3600  # 1 hour
     PROXY_VALIDATION_INTERVAL: int = 1800  # 30 minutes
-    PROXY_SOURCES: list[str] | None = None
-
-    # Rate limiting
-    PROXY_RPS_LIMIT: int = 3
-    PROXY_RPM_LIMIT: int = 60
 
     # Global Title Parser settings
-    QUEUE_UPDATE_INTERVAL: int = 600  # seconds
-    GTP_UPDATE_INTERVAL: timedelta = timedelta(days=1)
+    QUEUE_UPDATE_INTERVAL: int = 30 * 60  # 30 minutes
+    GTP_UPDATE_INTERVAL: timedelta = timedelta(days=3)
 
     # PATH
     TEMP_PATH: Path = Path(__file__).parent.parent.parent / "temp"

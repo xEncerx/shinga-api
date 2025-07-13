@@ -7,7 +7,7 @@ from fastapi import Depends
 import jwt
 
 from .v1.schemas import TokenPayload, InvalidUserCredentials, UserNotFound
-from app.infrastructure.db.crud.user import get_user
+from app.infrastructure.db.crud import UserCRUD
 from app.infrastructure.db.models import User
 from app.core import settings, security
 
@@ -42,7 +42,7 @@ async def get_current_user(token: TokenDep) -> User:
     except (InvalidTokenError, ValidationError):
         raise InvalidUserCredentials()
 
-    user = await get_user(user_id=token_data.sub)
+    user = await UserCRUD.read.user(user_id=token_data.sub)
     if not user:
         raise UserNotFound()
 

@@ -3,7 +3,7 @@ from fastapi import APIRouter
 
 from app.domain.models.exceptions import UserAlreadyExistsError
 from ...schemas import Token, OAuthError, UserAlreadyExists
-from app.infrastructure.db.crud.user import get_user
+from app.infrastructure.db.crud import UserCRUD
 from app.core.security import create_access_token
 from app.domain.use_cases import create_user
 from app.core.oauth import *
@@ -49,7 +49,7 @@ async def auth_callback(access_token_state=YandexCallbackDep):
             detail="Yandex OAuth profile does not contain an email address."
         )
 
-    user = await get_user(yandex_id=yandex_data.id)
+    user = await UserCRUD.read.user(yandex_id=yandex_data.id)
     if not user:
         try:
             user = await create_user(

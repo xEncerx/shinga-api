@@ -4,7 +4,7 @@ from app.infrastructure.updater.global_titles_updater import GlobalTitlesUpdater
 from app.core import *
 
 async def main():
-    async with GlobalTitlesUpdater(num_workers=5) as updater:
+    async with GlobalTitlesUpdater(num_workers=7) as updater:
         await updater.idle()
 
 

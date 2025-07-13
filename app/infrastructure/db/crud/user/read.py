@@ -14,128 +14,133 @@ class _GetUserField(TypedDict, total=False):
     yandex_id: str | None
     google_id: str | None
 
-async def get_user(**kwargs: Unpack[_GetUserField]) -> User | None:
-    """
-    Gets a user by various identifiers.
 
-    Args:
-        user_id (int): The ID of the user.
-        username (str): The username of the user.
-        email (str): The email of the user.
-        yandex_id (str): The Yandex ID of the user.
-        google_id (str): The Google ID of the user.
+class ReadOperations:
+    @staticmethod
+    async def user(**kwargs: Unpack[_GetUserField]) -> User | None:
+        """
+        Gets a user by various identifiers.
 
-    Returns:
-        User | None: The user object if found, otherwise None.
-    """
-    async with get_session() as session:
-        try:
-            if user_id := kwargs.get("user_id"):
-                return await session.get(User, user_id)
+        Args:
+            user_id (int): The ID of the user.
+            username (str): The username of the user.
+            email (str): The email of the user.
+            yandex_id (str): The Yandex ID of the user.
+            google_id (str): The Google ID of the user.
 
-            filters = {
-                k: v for k, v in kwargs.items() if v is not None
-            }
+        Returns:
+            User | None: The user object if found, otherwise None.
+        """
+        async with get_session() as session:
+            try:
+                if user_id := kwargs.get("user_id"):
+                    return await session.get(User, user_id)
 
-            if not filters:
-                return None
-
-            conditions = []
-            for field, value in filters.items():
-                if field in ["username", "email"]:
-                    conditions.append(func.lower(getattr(User, field)) == value.lower()) # type: ignore
-                else:
-                    conditions.append(getattr(User, field) == value)
-
-            result = await session.exec(select(User).where(conditions[0]))
-            return result.first()
-
-        except Exception as e:
-            logger.error(f"Failed to get user: {e}")
-            return None
-
-async def get_user_titles(
-    username: str,
-    page: int = 1,
-    per_page: int = 10,
-    bookmark: BookMarkType | None = None,
-):
-    """
-    Gets titles associated with a user.
-
-    Args:
-        username (str): The username of the user.
-        page (int): The page number for pagination.
-        per_page (int): The number of items per page.
-        bookmark (BookMarkType | None): The bookmark type to filter titles.
-
-    Returns:
-        A dictionary formatted as follows
-        ```
-        {
-            "pagination": Pagination as dict,
-            "content": list[
-                {
-                "title": {Title as dict},
-                "user_data": {UserTitles as dict}
+                filters = {
+                    k: v for k, v in kwargs.items() if v is not None
                 }
-            ]
-        }
-        ```
-    """
-    async with get_session() as session:
-        try:
-            offset = (page - 1) * per_page
 
-            # Base query
-            stmt = (
-                select(Title, UserTitles)
-                .join(UserTitles, UserTitles.title_id == Title.id) # type: ignore
-                .where(UserTitles.username == username)
-            )
+                if not filters:
+                    return None
 
-            if bookmark is not None:
-                stmt = stmt.where(UserTitles.bookmark == bookmark)
+                conditions = []
+                for field, value in filters.items():
+                    if field in ["username", "email"]:
+                        conditions.append(func.lower(getattr(User, field)) == value.lower()) # type: ignore
+                    else:
+                        conditions.append(getattr(User, field) == value)
 
-            count_stmt = select(func.count()).select_from(stmt.subquery())
+                result = await session.exec(select(User).where(conditions[0]))
+                return result.first()
 
-            # Execute the count query
-            total_count = (await session.exec(count_stmt)).first()
-            total_count = total_count if total_count is not None else 0
+            except Exception as e:
+                logger.error(f"Failed to get user: {e}")
+                return None
+    
+    @staticmethod
+    async def user_titles(
+        username: str,
+        page: int = 1,
+        per_page: int = 10,
+        bookmark: BookMarkType | None = None,
+    ):
+        """
+        Gets titles associated with a user.
 
-            stmt = stmt.offset(offset).limit(per_page)
-            data = await session.exec(stmt)
-            rows = data.all()
+        Args:
+            username (str): The username of the user.
+            page (int): The page number for pagination.
+            per_page (int): The number of items per page.
+            bookmark (BookMarkType | None): The bookmark type to filter titles.
 
-            content = []
-            for title, user_data in rows:
-                content.append(
+        Returns:
+            A dictionary formatted as follows
+            ```
+            {
+                "pagination": Pagination as dict,
+                "content": list[
                     {
-                        "title": title.model_dump(),
-                        "user_data": user_data.model_dump(),
+                    "title": {Title as dict},
+                    "user_data": {UserTitles as dict}
                     }
+                ]
+            }
+            ```
+        """
+        async with get_session() as session:
+            try:
+                offset = (page - 1) * per_page
+
+                # Base query
+                stmt = (
+                    select(Title, UserTitles)
+                    .join(UserTitles, UserTitles.title_id == Title.id) # type: ignore
+                    .where(UserTitles.username == username)
+                    .order_by(UserTitles.updated_at.desc()) # type: ignore
                 )
 
-            last_visible_page = (total_count + per_page - 1) // per_page
-            has_next_page = page < last_visible_page
+                if bookmark is not None:
+                    stmt = stmt.where(UserTitles.bookmark == bookmark)
 
-            return {
-                "pagination": Pagination(
-                    last_visible_page=last_visible_page,
-                    has_next_page=has_next_page,
-                    current_page=page,
-                    items=PaginationItems(
-                        count=len(content),
-                        total=total_count,
-                        per_page=per_page,
+                count_stmt = select(func.count()).select_from(stmt.subquery())
+
+                # Execute the count query
+                total_count = (await session.exec(count_stmt)).first()
+                total_count = total_count if total_count is not None else 0
+
+                stmt = stmt.offset(offset).limit(per_page)
+                data = await session.exec(stmt)
+                rows = data.all()
+
+                content = []
+                for title, user_data in rows:
+                    content.append(
+                        {
+                            "title": title.model_dump(),
+                            "user_data": user_data.model_dump(),
+                        }
                     )
-                ).model_dump(),
-                "content": content,
-            }
 
-        except Exception as e:
-            logger.error(f"Failed to get user titles: {e}")
-            return {
-                "pagination": Pagination().model_dump(),
-                "content": [],
-            }
+                last_visible_page = (total_count + per_page - 1) // per_page
+                has_next_page = page < last_visible_page
+
+                return {
+                    "pagination": Pagination(
+                        last_visible_page=last_visible_page,
+                        has_next_page=has_next_page,
+                        current_page=page,
+                        items=PaginationItems(
+                            count=len(content),
+                            total=total_count,
+                            per_page=per_page,
+                        )
+                    ).model_dump(),
+                    "content": content,
+                }
+
+            except Exception as e:
+                logger.error(f"Failed to get user titles: {e}")
+                return {
+                    "pagination": Pagination().model_dump(),
+                    "content": [],
+                }

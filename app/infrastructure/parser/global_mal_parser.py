@@ -199,7 +199,7 @@ class GlobalMalParser:
         """Load titles into the translation queue that need translation."""
         self._clear_queue(self._translation_queue)
 
-        titles = await get_titles_for_translation()
+        titles = []
         for title_id in titles:
             await self._translation_queue.put(title_id)
 
@@ -209,7 +209,7 @@ class GlobalMalParser:
         """Load titles into the update queue that need updating."""
         self._clear_queue(self._update_queue)
 
-        titles = await get_titles_for_update(
+        titles = await TitleCRUD.read.for_update(
             time_ago=settings.GTP_UPDATE_INTERVAL,
         )
         for title_id in titles:

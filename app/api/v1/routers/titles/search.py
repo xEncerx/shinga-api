@@ -23,7 +23,7 @@ async def global_search(
     **Limits the request to 60 per minute.**
     """
 
-    titles = await search_titles_by_name(
+    titles = await TitleCRUD.read.by_name(
         query,
         limit=limit,
         username=current_user.username,

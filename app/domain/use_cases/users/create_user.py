@@ -1,6 +1,7 @@
 from typing import Any
 
-from app.infrastructure.db.crud.user import *
+from app.infrastructure.db.crud.user import UserCRUD
+from app.infrastructure.db.models import User
 from app.domain.models.exceptions import *
 from app.core.security import *
 
@@ -29,9 +30,9 @@ async def create_user(
         is_stuff (bool): Whether the user is a staff member. Defaults to False.
         is_superuser (bool): Whether the user is a superuser. Defaults to False.
     """
-    if await get_user(username=username):
+    if await UserCRUD.read.user(username=username):
         raise UserAlreadyExistsError(f"Username '{username}' is already taken.")
-    if await get_user(email=email):
+    if await UserCRUD.read.user(email=email):
         raise UserAlreadyExistsError(f"Email '{email}' is already registered.")
 
     if google_id or yandex_id or not password:
@@ -48,6 +49,6 @@ async def create_user(
         google_id=google_id,
         yandex_id=yandex_id,
     )
-    await persist_user(user)
+    await UserCRUD.create.user(user)
     
     return user

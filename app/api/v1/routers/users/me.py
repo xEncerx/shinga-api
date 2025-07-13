@@ -26,7 +26,7 @@ async def update_profile(
     Update the current user's profile information.
     """
     if user_data.username is not None:
-        is_available = await get_user(username=user_data.username) is None
+        is_available = await UserCRUD.read.user(username=user_data.username) is None
         if not is_available:
             raise UserAlreadyExists(
                 detail=f"Username is already taken",
@@ -36,7 +36,7 @@ async def update_profile(
     if not data:
         raise ValidationError()
 
-    result = await update_user_fields(
+    result = await UserCRUD.update.fields(
         user_id=current_user.id,  # type: ignore
         **data,
     )
@@ -48,12 +48,12 @@ async def update_profile(
         )
 
 @router.put("/titles/update")
-async def add_update_user_title(
+async def upsert_user_title(
     user_title_data: UserTitleUpdatableFields,
     *,
     current_user: CurrentUserDep,
 ) -> Message:
-    is_title_exists = await get_title_by_id(id=user_title_data.title_id)
+    is_title_exists = await TitleCRUD.read.by_id(id=user_title_data.title_id)
     if not is_title_exists:
         raise TitleNotFound(
             detail=f"Title with id '{user_title_data.title_id}' not found",
@@ -63,7 +63,7 @@ async def add_update_user_title(
     if not data:
         raise ValidationError()
     
-    result = await upsert_user_title(
+    result = await UserCRUD.create.user_title(
         user_title=UserTitles(
             username=current_user.username,
             **data
@@ -77,12 +77,12 @@ async def add_update_user_title(
         )
 
 @router.get("/titles")
-async def read_user_titles(
+async def get_user_titles(
     query: GetUserTitlesFields = GetUserTitlesFields(),
     *,
     current_user: CurrentUserDep,
 ) -> TitlePaginationResponse:
-    user_data = await get_user_titles(
+    user_data = await UserCRUD.read.user_titles(
         username=current_user.username,
         page=query.page,
         per_page=query.per_page,

@@ -1,2 +1,2 @@
-from .title import *
-from .user import *
+from .title import TitleCRUD
+from .user import UserCRUD

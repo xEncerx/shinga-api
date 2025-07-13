@@ -26,7 +26,7 @@ class GlobalTitlesUpdater:
 
     async def load_update_queue(self) -> None:
         """Load titles into the update queue that need updating."""
-        titles = await get_titles_for_update(
+        titles = await TitleCRUD.read.for_update(
             time_ago=settings.GTP_UPDATE_INTERVAL,
         )
 

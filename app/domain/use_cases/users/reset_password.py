@@ -16,9 +16,9 @@ async def reset_user_password(email: EmailStr, new_password: str) -> None:
         UserNotFoundError: If the user with the given email does not exist.
     """
     hashed_password = get_password_hash(new_password)
-    user = await get_user(email=email)
+    user = await UserCRUD.read.user(email=email)
     if not user:
         raise UserNotFoundError()
     
     user.hashed_password = hashed_password
-    await update_user_fields(user.id, hashed_password=hashed_password) # type: ignore
+    await UserCRUD.update.fields(user.id, hashed_password=hashed_password) # type: ignore
