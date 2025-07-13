@@ -67,6 +67,11 @@ class UserNotFound(UserRelatedError):
     detail = "User not found"
 
 
+class UserNotSuperuser(UserRelatedError):
+    status_code = status.HTTP_403_FORBIDDEN
+    detail = "Superuser privileges required."
+
+
 class IncorrectUsernameOrPassword(UserRelatedError):
     status_code = status.HTTP_401_UNAUTHORIZED
     detail = "Incorrect username or password"

@@ -6,10 +6,10 @@ from typing import Annotated
 from fastapi import Depends
 import jwt
 
-from .v1.schemas import TokenPayload, InvalidUserCredentials, UserNotFound
 from app.infrastructure.db.crud import UserCRUD
 from app.infrastructure.db.models import User
 from app.core import settings, security
+from .v1.schemas import *
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"api/v1/auth/login/access-token",
@@ -51,7 +51,7 @@ async def get_current_user(token: TokenDep) -> User:
 async def get_superuser(token: TokenDep) -> User:
     user = await get_current_user(token)
     if not user.is_superuser:
-        raise UserNotFound(detail="Superuser privileges required.")
+        raise UserNotSuperuser()
     
     return user
 
