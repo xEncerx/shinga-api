@@ -4,7 +4,12 @@ from aiohttp import (
     TCPConnector,
     ClientTimeout,
 )
-from typing import Unpack, Any, Literal
+from typing import Any, Literal
+import sys
+if sys.version_info >= (3, 11):
+    from typing import Unpack
+else:
+    from typing_extensions import Unpack
 
 ResponseType = Literal["json", "text", "bytes", "stream"]
 

@@ -1,5 +1,10 @@
-from typing import Unpack, TypedDict
+from typing import TypedDict
 from sqlmodel import select, func
+import sys
+if sys.version_info >= (3, 11):
+    from typing import Unpack
+else:
+    from typing_extensions import Unpack
 
 from app.domain.models.pagination import *
 from ...session import get_session
