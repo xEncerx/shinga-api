@@ -2,7 +2,7 @@ from enum import Enum, auto
 import asyncio
 
 from app.domain.services.translation import Translator
-from app.infrastructure.storage import CoverManger
+from app.infrastructure.storage import MediaManger
 from app.infrastructure.db.models import *
 from app.infrastructure.managers import *
 from app.infrastructure.db.crud import *
@@ -60,7 +60,7 @@ class UpdateWorker:
         self._mal_client = MalProvider()
 
         # Initialize utils
-        self._cover_manager = CoverManger()
+        self._cover_manager = MediaManger()
         self._translator = Translator()
 
         self._proxy_manager = proxy_manager

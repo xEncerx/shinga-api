@@ -15,3 +15,10 @@ redis = Redis(
     db=0,
     password=settings.REDIS_PASSWORD,
 )
+
+def create_media_directories():
+    from pathlib import Path
+
+    Path(settings.MEDIA_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
+    Path(settings.COVER_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
+    Path(settings.AVATAR_STORAGE_PATH).mkdir(parents=True, exist_ok=True)

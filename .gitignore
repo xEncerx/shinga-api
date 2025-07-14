@@ -7,3 +7,4 @@ __pycache__
 temp/
 app/api/media/**
 app/core/*.txt
+venv/

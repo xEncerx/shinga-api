@@ -1,21 +1,24 @@
 from fastapi.responses import RedirectResponse
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.domain.models.exceptions import UserAlreadyExistsError
 from ...schemas import Token, OAuthError, UserAlreadyExists
 from app.infrastructure.db.crud import UserCRUD
-from app.core.security import create_access_token
 from app.domain.use_cases import create_user
+from app.core import logger, limiter
+from app.core.security import *
 from app.core.oauth import *
-from app.core import logger
 
 router = APIRouter(prefix=f"/yandex")
 
 
 @router.get("/login")
-async def login() -> RedirectResponse:
+@limiter.limit("5/minute")
+async def login(request: Request) -> RedirectResponse:
     """
     Initiates the Yandex OAuth login process.
+
+    **Limits: 5 requests per minute**
 
     Returns:
         RedirectResponse: Redirects to the Yandex OAuth authorization URL.
@@ -27,9 +30,16 @@ async def login() -> RedirectResponse:
 
 
 @router.get("/callback", response_model=Token)
-async def auth_callback(access_token_state=YandexCallbackDep):
+@limiter.limit("5/minute")
+async def auth_callback(
+    access_token_state=YandexCallbackDep,
+    *,
+    request: Request
+):
     """
     Yandex OAuth callback endpoint.
+
+    **Limits: 5 requests per minute**
 
     Returns:
         Token: A token containing the access token for the authenticated user.
@@ -53,7 +63,7 @@ async def auth_callback(access_token_state=YandexCallbackDep):
     if not user:
         try:
             user = await create_user(
-                username=yandex_data.email,
+                username=generate_username(),
                 email=yandex_data.email,
                 yandex_id=yandex_data.id,
             )

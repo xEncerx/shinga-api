@@ -5,13 +5,16 @@ from typing import Any
 from app.infrastructure.db.models.user.relations import *
 from app.core import settings
 
-class UserIn(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
+
+class UserSignUp(BaseModel):
+    username: str = Field(..., min_length=3, max_length=20)
     email: EmailStr = Field(..., max_length=255)
     password: str = Field(..., min_length=8, max_length=128)
 
+
 class ForgotPasswordForm(BaseModel):
     email: EmailStr = Field(..., max_length=255)
+
 
 class UserPasswordRestore(BaseModel):
     email: EmailStr = Field(..., max_length=255)
@@ -37,6 +40,7 @@ class UserPublic(BaseModel):
 
     extra_data: dict[str, Any] | None = Field(default=None)
 
+
 class UserTitlePublic(BaseModel):
     username: str
     title_id: str
@@ -47,10 +51,12 @@ class UserTitlePublic(BaseModel):
 
     updated_at: datetime
 
+
 class UserUpdatableFields(BaseModel):
-    username: str | None = Field(default=None, min_length=3, max_length=50)
+    username: str | None = Field(default=None, min_length=3, max_length=20)
     avatar: str | None = Field(default=None)
     description: str | None = Field(default=None, max_length=1000)
+
 
 class UserTitleUpdatableFields(BaseModel):
     title_id: str
@@ -58,6 +64,7 @@ class UserTitleUpdatableFields(BaseModel):
     user_rating: int = Field(default=0, ge=0, le=10)
     current_url: str | None = Field(default=None)
     bookmark: BookMarkType = Field(default=BookMarkType.NOT_READING)
+
 
 class GetUserTitlesFields(BaseModel):
     page: int = Field(default=1, ge=1)

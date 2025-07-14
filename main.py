@@ -15,10 +15,22 @@ from app.core import *
 
 async def lifespan(app: FastAPI):
     # Initialize any resources needed for the app
+    create_media_directories()
     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+
+    # Covers static files. Better to use nginx or other web server for production.
+    # ! Will be removed in future releases.
+    app.mount(
+        "/media/covers", StaticFiles(directory=settings.COVER_STORAGE_PATH), name="covers"
+    )
+    app.mount(
+        "/media/avatars",
+        StaticFiles(directory=settings.AVATAR_STORAGE_PATH),
+        name="avatars",
+    )
     yield
     # Cleanup resources when the app is shutting down
-    await redis.close()
+    await redis.aclose()
 
 
 app = FastAPI(
@@ -30,16 +42,6 @@ app.include_router(router)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 app.add_exception_handler(HTTPException, exception_handler)  # type: ignore
-
-# Covers static files. Better to use nginx or other web server for production.
-app.mount(
-    "/media/covers", StaticFiles(directory=settings.COVER_STORAGE_PATH), name="covers"
-)
-app.mount(
-    "/media/avatars",
-    StaticFiles(directory=settings.AVATAR_STORAGE_PATH),
-    name="avatars",
-)
 
 
 if __name__ == "__main__":

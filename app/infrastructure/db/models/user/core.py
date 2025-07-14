@@ -14,7 +14,7 @@ class User(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True, index=True)
 
-    username: str = Field(index=True, unique=True, max_length=50)
+    username: str = Field(index=True, unique=True, max_length=20)
     email: EmailStr = Field(unique=True, index=True, max_length=255)
 
     hashed_password: str

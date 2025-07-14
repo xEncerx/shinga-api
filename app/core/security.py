@@ -46,6 +46,12 @@ def generate_random_password(length: int = 12) -> str:
     )
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
+def generate_username(length: int = 15) -> str:
+    alphabet = (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    )
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
 
 def generate_code() -> str:
     """Generate a random numeric code"""

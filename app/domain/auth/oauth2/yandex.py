@@ -1,6 +1,5 @@
-from httpx_oauth.oauth2 import OAuth2, OAuth2ClientAuthMethod, OAuth2Token
+from httpx_oauth.oauth2 import OAuth2, OAuth2ClientAuthMethod
 from httpx_oauth.exceptions import GetProfileError
-from typing import Any
 
 from app.domain.models import OAuthProfile
 
@@ -59,7 +58,7 @@ class YandexOAuth2(OAuth2):
                 data = response.json()
 
                 return OAuthProfile(
-                    id=data.get("id"),
+                    id=data["id"],
                     email=data.get("default_email"),
                     login=data.get("login"),
                 )

@@ -64,7 +64,7 @@ class RemangaProvider(BaseProvider):
 
         try:
             data = await self.get(
-                url=f"v2/search/catalog/?page={page}&count={limit}",
+                url=f"v2/search/catalog/?page={page}&count={limit}&ordering=-id",
                 proxy=proxy,
                 timeout=ClientTimeout(total=100)
             )

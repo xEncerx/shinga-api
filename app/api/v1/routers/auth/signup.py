@@ -1,20 +1,27 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.domain.models.exceptions import UserAlreadyExistsError
 from app.core.security import is_password_strong
 from app.domain.use_cases import create_user
+from app.core import logger, limiter
 from ...schemas import *
 
 router = APIRouter()
 
 
 @router.post("/signup")
-async def signup(user_in: UserIn) -> Message:
+@limiter.limit("5/minute")
+async def signup(
+    user_in: UserSignUp,
+    request: Request,
+) -> Message:
     """
     Sign up a new user.
 
+    **Limits: 5 requests per minute**
+
     Args:
-        user_in (UserIn): User input data containing username, email, and password.
+        user_in (UserSignUp): User input data containing username, email, and password.
 
     Returns:
         Message: A message indicating the success of the user creation.
@@ -38,7 +45,5 @@ async def signup(user_in: UserIn) -> Message:
     except UserAlreadyExistsError as e:
         raise UserAlreadyExists(detail=e.message)
     except Exception as e:
-        raise UserRelatedError(
-            detail=str(e),
-            status_code=500,
-        )
+        logger.error(f"Failed to create user: {e}")
+        raise UserRelatedError(status_code=500)
