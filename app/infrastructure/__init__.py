@@ -1,2 +1,2 @@
 from .managers import ProxyManager, ApiKeyManager
-from .storage import CoverManger
+from .storage import MediaManger

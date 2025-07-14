@@ -1,3 +1,4 @@
+from fastapi import UploadFile
 from typing import Literal
 from pathlib import Path
 from PIL import Image
@@ -12,9 +13,9 @@ from app.core import settings, logger
 from app.utils import AsyncHttpClient
 
 
-class CoverManger(AsyncHttpClient):
+class MediaManger(AsyncHttpClient):
     """
-    Manages cover image downloads, processing, and storage.
+    Manages image downloads, processing, and storage.
 
     Attributes:
         storage_path (Path): Directory where cover images are stored
@@ -23,7 +24,7 @@ class CoverManger(AsyncHttpClient):
 
     def __init__(
         self,
-        storage_path: str = settings.COVER_STORAGE_PATH,
+        storage_path: str = settings.MEDIA_STORAGE_PATH,
         proxy: str | None = None,
         timeout: int = 10,
     ) -> None:
@@ -37,13 +38,14 @@ class CoverManger(AsyncHttpClient):
         """
 
         self.storage_path = Path(storage_path)
-        self.storage_path.mkdir(parents=True, exist_ok=True)
+        self.covers_path = self.storage_path / "covers"
+        self.avatars_path = self.storage_path / "avatars"
 
         self.SIZE_MAP = {"": (225, 319), "s": (112, 160), "l": (423, 600)}
 
         super().__init__(proxy=proxy, timeout=timeout)
 
-    async def __aenter__(self) -> "CoverManger":
+    async def __aenter__(self) -> "MediaManger":
         await super().__aenter__()
         return self
 
@@ -121,7 +123,12 @@ class CoverManger(AsyncHttpClient):
             if target_size:
                 img.thumbnail(target_size, Image.Resampling.LANCZOS)
 
-            img.save(output_buffer, format="WEBP", quality=95)
+            img.save(
+                output_buffer,
+                format="WEBP",
+                quality=95,
+                method=6,
+            )
 
             return output_buffer.getvalue()
 
@@ -153,7 +160,7 @@ class CoverManger(AsyncHttpClient):
             return [settings.COVER_404_PATH] * 3
 
         filename = self.generate_filename(provider, content_id, "l")
-        filepath = self.storage_path / filename
+        filepath = self.covers_path / filename
         if filepath.exists() and not force_redownload:
             return [
                 f"{settings.COVER_PUBLIC_PATH}/{self.generate_filename(provider, content_id, size_name)}"  # type: ignore
@@ -167,7 +174,7 @@ class CoverManger(AsyncHttpClient):
         result = []
         for size_name, size in self.SIZE_MAP.items():
             filename = self.generate_filename(provider, content_id, size_name)  # type: ignore
-            filepath = self.storage_path / filename
+            filepath = self.covers_path / filename
 
             if filepath.exists() and not force_redownload:
                 result.append(f"{settings.COVER_PUBLIC_PATH}/{filename}")
@@ -188,7 +195,23 @@ class CoverManger(AsyncHttpClient):
 
         return result
 
-    async def batch_save(
+    async def save_avatar(
+        self,
+        avatar: UploadFile,
+        user_id: str,
+    ) -> str | None:
+        filename = f"avatar_{user_id}.webp"
+        file_path = self.avatars_path / filename
+
+        avatar_bytes = await avatar.read()
+
+        processed_data = self._process_image(avatar_bytes, (200, 200))
+        async with aiofiles.open(file_path, "wb") as f:
+            await f.write(processed_data)
+
+        return f"{settings.AVATAR_PUBLIC_PATH}/{filename}"
+
+    async def batch_covers_save(
         self,
         images: list[tuple[str | None, str, str]],
         force_redownload: bool = False,

@@ -1,1 +1,1 @@
-from .covers import CoverManger
+from .media import MediaManger

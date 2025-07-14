@@ -4,7 +4,7 @@ import asyncio
 
 from app.domain.services.translation import Translator
 from app.infrastructure.managers import ProxyManager
-from app.infrastructure.storage import CoverManger
+from app.infrastructure.storage import MediaManger
 from app.infrastructure.db.models import *
 from app.infrastructure.db.crud import *
 from app.providers import MalProvider
@@ -61,7 +61,7 @@ class Worker:
         self._proxy_manager = proxy_manager
         self._mal_client = MalProvider()
         self._translator = Translator()
-        self._cover_manager = CoverManger()
+        self._cover_manager = MediaManger()
 
     async def parsing(self, value: int) -> None:
         """
@@ -91,7 +91,7 @@ class Worker:
             page.data[i : i + batch_size] for i in range(0, len(page.data), batch_size)
         ]
         for batch in batches:
-            images_data = await self._cover_manager.batch_save(
+            images_data = await self._cover_manager.batch_covers_save(
                 images=[
                     (title.cover.large_url, "mal", str(title.source_id))
                     for title in batch
@@ -149,7 +149,7 @@ class Worker:
         # Translate data
         translated_data = await self._translator.translate(
             {
-                "title": title.name_en, # type: ignore
+                "title": title.name_en,  # type: ignore
                 "description": title.description.en or "",
             },
             proxy=proxy,
