@@ -21,7 +21,7 @@ class ShikiParser(BaseParserProvider):
             ),
             name_en=data["english"],
             name_ru=data.get("russian"),
-            alt_names=data.get("synonyms", []) + [data.get("japanese", "")],
+            alt_names=data.get("synonyms", []) or [],
             type_=TypeConverter.from_shiki(data["kind"]),
             chapters=data.get("chapters", 0) or 0,
             volumes=data.get("volumes", 0) or 0,
