@@ -48,6 +48,14 @@ class OAuthError(BaseAPIException):
     detail = "OAuth error"
 
 
+# Base class for file-related exceptions
+class FileRelatedError(BaseAPIException):
+    """File related error exception."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "File related error"
+
+
 # Base class for email-related exceptions
 class EmailError(BaseAPIException):
     """Email error exception."""
@@ -116,6 +124,14 @@ class EmailCodeMismatch(EmailError):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "Email code mismatch"
 
+# --- File exceptions ---
+class FileTooLarge(FileRelatedError):
+    status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    detail = "File size exceeds the allowed limit"
+
+class FileExtensionNotAllowed(FileRelatedError):
+    status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+    detail = "File extension not allowed"
 
 # --- Other exceptions ---
 class ValidationError(BaseAPIException):

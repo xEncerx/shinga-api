@@ -1,6 +1,5 @@
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
-
-from app.domain.auth.oauth2 import YandexOAuth2
+from app.domain.auth.oauth2 import YandexOAuth2, GoogleOAuth2
 from fastapi import Depends
 
 from app.core import settings
@@ -14,5 +13,17 @@ YandexCallbackDep = Depends(
     OAuth2AuthorizeCallback(
         yandex_oauth,
         redirect_url=settings.YANDEX_REDIRECT_URI,
+    )
+)
+
+google_oauth = GoogleOAuth2(
+    name="google",
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+)
+GoogleCallbackDep = Depends(
+    OAuth2AuthorizeCallback(
+        google_oauth,
+        redirect_url=settings.GOOGLE_REDIRECT_URI,
     )
 )

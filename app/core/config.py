@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     YANDEX_CLIENT_SECRET: str
     YANDEX_REDIRECT_URI: str = f"{API_URL}{API_V1_STR}/auth/yandex/callback"
     # --- GOOGLE ---
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str = f"{API_URL}{API_V1_STR}/auth/google/callback"
 
     # Redis settings
     REDIS_HOST: str = "localhost"
@@ -61,11 +64,16 @@ class Settings(BaseSettings):
         )
 
     # Media settings
-    COVER_STORAGE_PATH: str = "C:/Users/encer/OneDrive/Dokumente/shinga-media/media/covers"
-    AVATAR_STORAGE_PATH: str = "C:/Users/encer/OneDrive/Dokumente/shinga-media/media/avatars"
+    MEDIA_STORAGE_PATH: str = "app/api/media"
+    COVER_STORAGE_PATH: str = "app/api/media/covers"
+    AVATAR_STORAGE_PATH: str = "app/api/media/avatars"
     COVER_PUBLIC_PATH: str = "/media/covers"
+    AVATAR_PUBLIC_PATH: str = "/media/avatars"
     COVER_404_PATH: str = "/media/covers/404.webp"
     DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"
+
+    MAX_AVATAR_SIZE: int = 2 * 1024 * 1024  # 2 MB
+    ALLOWED_AVATAR_EXTENSIONS: set[str] = {"jpg", "jpeg", "png", "webp"}
 
     # OpenAI API settings
     OPENAI_API_BASE: str
