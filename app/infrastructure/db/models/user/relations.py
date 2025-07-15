@@ -2,7 +2,7 @@ from sqlmodel import Field, SQLModel
 from enum import Enum
 
 class BookMarkType(str, Enum):
-    NOT_READING = "not_reading"
+    NOT_READING = "not reading"
     READING = "reading"
     COMPLETED = "completed"
     DROPPED = "dropped"
