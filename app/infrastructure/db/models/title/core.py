@@ -67,7 +67,7 @@ class Title(SQLModel, table=True):
     source_id: str
 
     # This field is used to store additional data that may not fit into the predefined fields.
-    extra_data: dict[str, Any] | None = Field(default=None, sa_type=JSONB)
+    extra_data: dict[str, Any] = Field(default={}, sa_type=JSONB)
 
     # Full-text search vector for efficient searching
     search_vector: str | None = Field(

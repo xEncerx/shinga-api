@@ -69,7 +69,6 @@ class GlobalTitlesUpdater:
         """Process a single worker task with error handling."""
         try:
             await worker.process_title(title_id)
-            logger.debug(f"Worker {worker.id}: Task completed for title {title_id}")
         except UpdateWorkerError as e:
             # Return task to queue if it should be retried
             if e.should_retry:

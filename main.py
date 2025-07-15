@@ -6,7 +6,6 @@ from fastapi_cache import FastAPICache
 
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, HTTPException
-from collections.abc import AsyncIterator
 import uvicorn
 
 from app.api import router, exception_handler
