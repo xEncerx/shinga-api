@@ -1,3 +1,5 @@
+from aiohttp.client_exceptions import ClientResponseError
+from aiohttp import ClientTimeout
 from abc import ABC, abstractmethod
 
 from app.infrastructure.db.models import Title

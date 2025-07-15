@@ -28,6 +28,8 @@ class MalProvider(BaseProvider):
         Returns:
             Title | None: Parsed title data if successful or None if no data is found or an error occurs.
 
+        Raises:
+            ClientResponseError: If the request fails with a client error.
         """
         try:
             data = await self.get(url=f"manga/{id}", proxy=proxy)
@@ -36,6 +38,8 @@ class MalProvider(BaseProvider):
                 return
 
             return MalParser.parse(data["data"])
+        except ClientResponseError:
+            raise # re-raise to handle it in the worker
         except Exception as e:
             logger.error(f"Error fetching data from MAL for ID {id}: {e}")
             return

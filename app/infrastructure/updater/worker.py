@@ -1,5 +1,5 @@
+from aiohttp.client_exceptions import ClientResponseError
 from enum import Enum, auto
-import asyncio
 
 from app.domain.services.translation import Translator
 from app.infrastructure.storage import MediaManger
@@ -77,7 +77,7 @@ class UpdateWorker:
                     title_id, "No available proxies for the worker."
                 )
 
-            title = await TitleCRUD.read.by_id(title_id)
+            title: Title | None = await TitleCRUD.read.by_id(title_id) # type: ignore
             if not title:
                 raise UpdateWorkerError(
                     title_id,
@@ -85,33 +85,48 @@ class UpdateWorker:
                     status_code=404,
                     should_retry=False,
                 )
+            if title.extra_data.get("is_404", False):
+                return  # Skip titles marked as 404
 
-            match title.source_provider:
-                case SourceProvider.REMANGA:
-                    new_title = await self._remanga_client.get_by_id(title.source_id)
-                case SourceProvider.SHIKIMORI:
-                    new_title = await self._shiki_client.get_by_id(
-                        title.source_id, proxy=proxy
+            try:
+                match title.source_provider:
+                    case SourceProvider.REMANGA:
+                        new_title = await self._remanga_client.get_by_id(title.source_id)
+                    case SourceProvider.SHIKIMORI:
+                        new_title = await self._shiki_client.get_by_id(
+                            title.source_id, proxy=proxy
+                        )
+                    case SourceProvider.MAL:
+                        new_title = await self._mal_client.get_by_id(
+                            title.source_id, proxy=proxy
+                        )
+                    case SourceProvider.CUSTOM:
+                        new_title = None  # Custom titles processing not implemented yet
+                    case _:
+                        raise UpdateWorkerError(
+                            title_id,
+                            f"Unknown source provider: {title.source_provider}",
+                            should_retry=False,
+                        )
+            except ClientResponseError as e:
+                if e.status == 404:
+                    # Set title as 404 if not found, to dont process it again later
+                    logger.warning(
+                        f"Title with ID {title.id} not found in {title.source_provider.name}. Marking as 404."
                     )
-                case SourceProvider.MAL:
-                    new_title = await self._mal_client.get_by_id(
-                        title.source_id, proxy=proxy
-                    )
-                case SourceProvider.CUSTOM:
-                    new_title = None  # Custom titles processing not implemented yet
-                case _:
-                    raise UpdateWorkerError(
+                    title.extra_data["is_404"] = True
+                    await TitleCRUD.update.fields(
                         title_id,
-                        f"Unknown source provider: {title.source_provider}",
-                        should_retry=False,
+                        extra_data=title.extra_data,
                     )
+                    return
+                new_title = None  # Handle other client errors gracefully
 
             if not new_title:
                 raise UpdateWorkerError(
                     title_id,
-                    f"Title with ID {title.id} not found in the {title.source_provider.name}.",
-                    status_code=404,
-                    should_retry=False,
+                    f"Title with ID {title.id} cant be parse from {title.source_provider.name}.",
+                    status_code=400,
                 )
 
             # Update title fields with new data

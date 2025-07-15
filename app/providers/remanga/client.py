@@ -1,9 +1,6 @@
-from aiohttp import ClientTimeout
-
 from ..base_provider import *
 from .parser import RemangaParser
 from app.core import logger
-
 
 class RemangaProvider(BaseProvider):
     """
@@ -29,6 +26,8 @@ class RemangaProvider(BaseProvider):
         Returns:
             Title | None: Parsed title data if successful or None if no data is found or an error occurs.
 
+        Raises:
+            ClientResponseError: If the request fails with a client error.
         """
         try:
             data = await self.get(url=f"v2/titles/{id}/", proxy=proxy)
@@ -37,6 +36,8 @@ class RemangaProvider(BaseProvider):
                 return
 
             return RemangaParser.parse(data)
+        except ClientResponseError:
+            raise # re-raise to handle it in the worker
         except Exception as e:
             logger.error(f"Error fetching data from Remanga for slug {id}: {e}")
             return

@@ -1,5 +1,4 @@
-from app.domain.models import TitlePagination
-from ..base_provider import BaseProvider, Title
+from ..base_provider import *
 from .parser import ShikiParser
 from app.core import logger
 
@@ -46,6 +45,19 @@ class ShikiProvider(BaseProvider):
         return self
 
     async def get_by_id(self, id: int | str, proxy: str | None = None) -> Title | None:
+        """
+        Fetch title data by id from Shikimori.
+
+        Args:
+            id (str): The id of the title to fetch.
+            proxy (str | None): Optional proxy URL for the request.
+
+        Returns:
+            Title | None: Parsed title data if successful or None if no data is found or an error occurs.
+
+        Raises:
+            ClientResponseError: If the request fails with a client error.
+        """
         try:
             arguments = f'ids: "{id}"'
             data = await self.post(
@@ -55,10 +67,10 @@ class ShikiProvider(BaseProvider):
             )
             if not data or not data["data"]["mangas"]:
                 return
-            
-            # print(data["data"]["mangas"][0])  # Debugging line to see the raw data
 
             return ShikiParser.parse(data["data"]["mangas"][0])
+        except ClientResponseError:
+            raise # re-raise to handle it in the worker
         except Exception as e:
             raise e
         
