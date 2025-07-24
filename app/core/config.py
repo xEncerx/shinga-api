@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str | None = None
 
     # Redis cache settings
-    RESET_CODE_TTL: int = 15 * 60 # 15 minutes
+    RESET_CODE_TTL: int = 15 * 60  # 15 minutes
 
     # Database settings
     POSTGRES_USER: str
@@ -65,8 +65,8 @@ class Settings(BaseSettings):
 
     # Media settings
     MEDIA_STORAGE_PATH: str = "app/api/media"
-    COVER_STORAGE_PATH: str = "app/api/media/covers"
-    AVATAR_STORAGE_PATH: str = "app/api/media/avatars"
+    COVER_STORAGE_PATH: str = f"{MEDIA_STORAGE_PATH}/covers"
+    AVATAR_STORAGE_PATH: str = f"{MEDIA_STORAGE_PATH}/avatars"
     COVER_PUBLIC_PATH: str = "/media/covers"
     AVATAR_PUBLIC_PATH: str = "/media/avatars"
     COVER_404_PATH: str = "/media/covers/404.webp"

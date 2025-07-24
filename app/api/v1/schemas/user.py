@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, EmailStr
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from app.infrastructure.db.models.user.relations import *
@@ -49,7 +49,9 @@ class UserTitlePublic(BaseModel):
     current_url: str | None = Field(default=None)
     bookmark: str = Field(default=BookMarkType.NOT_READING)
 
-    updated_at: datetime
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+    )
 
 
 class UserUpdatableFields(BaseModel):

@@ -1,4 +1,3 @@
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from fastapi_cache.backends.redis import RedisBackend
@@ -8,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, HTTPException
 import uvicorn
 
-from app.api import router, exception_handler
+from app.api import *
 from app.core import *
 
 
@@ -20,7 +19,9 @@ async def lifespan(app: FastAPI):
     # Covers static files. Better to use nginx or other web server for production.
     # ! Will be removed in future releases.
     app.mount(
-        "/media/covers", StaticFiles(directory=settings.COVER_STORAGE_PATH), name="covers"
+        "/media/covers",
+        StaticFiles(directory=settings.COVER_STORAGE_PATH),
+        name="covers",
     )
     app.mount(
         "/media/avatars",
@@ -29,7 +30,7 @@ async def lifespan(app: FastAPI):
     )
     yield
     # Cleanup resources when the app is shutting down
-    await redis.aclose()
+    await redis.close()
 
 
 app = FastAPI(
@@ -39,8 +40,9 @@ app = FastAPI(
 )
 app.include_router(router)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
+app.add_exception_handler(RateLimitExceeded, slowapi_exception_handler)  # type: ignore
 app.add_exception_handler(HTTPException, exception_handler)  # type: ignore
+app.add_exception_handler(RequestValidationError, pydantic_exception_handler)  # type: ignore
 
 
 if __name__ == "__main__":

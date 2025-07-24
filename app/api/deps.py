@@ -26,10 +26,6 @@ async def get_current_user(token: TokenDep) -> User:
         token (TokenDep): The JWT token dependency typically extracted from Authorization header.
     Returns:
         User: The authenticated user object.
-    Raises:
-        HTTPException:
-            - 403 status code if the token is invalid or couldn't be decoded.
-            - 404 status code if the user associated with the token doesn't exist.
     """
     try:
         payload = jwt.decode(

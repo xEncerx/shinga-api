@@ -1,6 +1,7 @@
 from typing import TypedDict
-from sqlmodel import select, func
+from sqlmodel import select, func, and_
 import sys
+
 if sys.version_info >= (3, 11):
     from typing import Unpack
 else:
@@ -11,6 +12,7 @@ from ...session import get_session
 from ...models import *
 
 from app.core import logger
+
 
 class _GetUserField(TypedDict, total=False):
     user_id: int | None
@@ -41,9 +43,7 @@ class ReadOperations:
                 if user_id := kwargs.get("user_id"):
                     return await session.get(User, user_id)
 
-                filters = {
-                    k: v for k, v in kwargs.items() if v is not None
-                }
+                filters = {k: v for k, v in kwargs.items() if v is not None}
 
                 if not filters:
                     return None
@@ -51,7 +51,7 @@ class ReadOperations:
                 conditions = []
                 for field, value in filters.items():
                     if field in ["username", "email"]:
-                        conditions.append(func.lower(getattr(User, field)) == value.lower()) # type: ignore
+                        conditions.append(func.lower(getattr(User, field)) == value.lower())  # type: ignore
                     else:
                         conditions.append(getattr(User, field) == value)
 
@@ -61,7 +61,7 @@ class ReadOperations:
             except Exception as e:
                 logger.error(f"Failed to get user: {e}")
                 return None
-    
+
     @staticmethod
     async def user_titles(
         username: str,
@@ -99,9 +99,9 @@ class ReadOperations:
                 # Base query
                 stmt = (
                     select(Title, UserTitles)
-                    .join(UserTitles, UserTitles.title_id == Title.id) # type: ignore
+                    .join(UserTitles, UserTitles.title_id == Title.id)  # type: ignore
                     .where(UserTitles.username == username)
-                    .order_by(UserTitles.updated_at.desc()) # type: ignore
+                    .order_by(UserTitles.updated_at.desc())  # type: ignore
                 )
 
                 if bookmark is not None:
@@ -138,7 +138,7 @@ class ReadOperations:
                             count=len(content),
                             total=total_count,
                             per_page=per_page,
-                        )
+                        ),
                     ).model_dump(),
                     "content": content,
                 }
@@ -149,3 +149,43 @@ class ReadOperations:
                     "pagination": Pagination().model_dump(),
                     "content": [],
                 }
+
+    @staticmethod
+    async def votes(username: str) -> UserVotes:
+        """
+        Get the voting statistics for a user.
+        """
+        async with get_session() as session:
+            try:
+                stmt = select(UserTitles.user_rating).where(
+                    and_(
+                        UserTitles.username == username,
+                        UserTitles.user_rating > 0,
+                    )
+                )
+
+                result = await session.exec(stmt)
+                ratings = result.all()
+                vote_counts = {i: 0 for i in range(1, 11)}
+                total = len(ratings)
+
+                for rating in ratings:
+                    if 1 <= rating <= 10:
+                        vote_counts[rating] += 1
+
+                return UserVotes(
+                    total=total,
+                    vote_1=vote_counts[1],
+                    vote_2=vote_counts[2],
+                    vote_3=vote_counts[3],
+                    vote_4=vote_counts[4],
+                    vote_5=vote_counts[5],
+                    vote_6=vote_counts[6],
+                    vote_7=vote_counts[7],
+                    vote_8=vote_counts[8],
+                    vote_9=vote_counts[9],
+                    vote_10=vote_counts[10],
+                )
+            except Exception as e:
+                logger.error(f"Failed to get user votes: {e}")
+                return UserVotes()

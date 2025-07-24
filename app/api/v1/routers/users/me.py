@@ -92,6 +92,20 @@ async def upsert_user_title(
             detail="Failed to update user title. Please try again later.",
         )
 
+@router.get("/votes")
+@limiter.limit("3/second;60/minute")
+async def get_user_votes(
+    *,
+    current_user: CurrentUserDep,
+    request: Request,
+) -> UserVotes:
+    """
+    Get the current user's voting statistics.
+
+    **Limits: 3 requests per second, 60 requests per minute.**
+    """
+    return await UserCRUD.read.votes(username=current_user.username)
+
 
 @router.get("/titles")
 @limiter.limit("3/second;60/minute")
