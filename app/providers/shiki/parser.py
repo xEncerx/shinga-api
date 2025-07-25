@@ -33,7 +33,7 @@ class ShikiParser(BaseParserProvider):
             rating=data.get("score", 0.0) or 0.0,
             scored_by=sum(i["count"] for i in data["scoresStats"]),
             favorites=sum(i["count"] for i in data["statusesStats"]),
-            description=TitleDescription(en=None, ru=data.get("description")),
+            description=TitleDescription(en=None, ru=tag_remover(data.get("description"))),
             authors=[
                 i.get("person", {}).get("name", "unknown")
                 for i in data.get("personRoles", [])

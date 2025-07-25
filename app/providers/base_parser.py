@@ -3,6 +3,7 @@ from typing import Any
 
 from app.infrastructure.db.models import *
 from app.infrastructure.db.utils import *
+from app.utils import tag_remover
 from app.domain.models import *
 
 

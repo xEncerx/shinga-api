@@ -20,8 +20,8 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
 
     def __init__(
         self,
-        validation_interval: int = 600, # 10 minutes
-        fetch_interval: int = 1200, # 20 minutes
+        validation_interval: int = 1*60*60, # 1 hour
+        fetch_interval: int = 2*60*60, # 2 hours
         batch_validation: bool = True,
         batch_size: int = 1000,
         validation_timeout: int = 4,
@@ -75,7 +75,7 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
             proxies = list(set(proxies))
 
         except Exception as e:
-            print(f"Error fetching proxies: {e}")
+            logger.error(f"Error fetching proxies: {e}")
 
         return proxies
 

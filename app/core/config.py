@@ -84,7 +84,6 @@ class Settings(BaseSettings):
     PROXY_VALIDATION_INTERVAL: int = 1800  # 30 minutes
 
     # Global Title Parser settings
-    QUEUE_UPDATE_INTERVAL: int = 30 * 60  # 30 minutes
     GTP_UPDATE_INTERVAL: timedelta = timedelta(days=3)
 
     # PATH

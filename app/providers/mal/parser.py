@@ -25,7 +25,7 @@ class MalParser(BaseParserProvider):
             scored_by=data["scored_by"] or 0,
             popularity=data["popularity"] or 0,
             favorites=data["favorites"] or 0,
-            description=TitleDescription(en=data.get("synopsis", ""), ru=None),
+            description=TitleDescription(en=tag_remover(data.get("synopsis", "")), ru=None),
             authors=[author["name"] for author in data.get("authors", [])],
             genres=[
                 genre

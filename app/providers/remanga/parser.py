@@ -1,4 +1,3 @@
-from app.utils import tag_remover
 from ..base_parser import *
 
 
