@@ -59,7 +59,7 @@ class TaskManager:
     async def get_completed_pages(
         self,
         provider: SourceProvider,
-        min_age: timedelta = timedelta(days=3),
+        min_age: timedelta = timedelta(days=2),
     ) -> list[int]:
         """Get list of completed pages for a provider within the specified time frame."""
         cutoff_date = datetime.now() - min_age
@@ -82,7 +82,7 @@ class TaskManager:
 
     async def cleanup_old_records(
         self,
-        min_age: timedelta = timedelta(days=3),
+        min_age: timedelta = timedelta(days=2),
     ) -> None:
         """Remove old records beyond the specified age."""
         cutoff_date = datetime.now() - min_age

@@ -149,10 +149,7 @@ class GlobalTitlesUpdater:
 
         # Get completed pages within the time frame
         completed_pages = set(
-            await self._task_manager.get_completed_pages(
-                provider,
-                settings.GTP_UPDATE_INTERVAL,
-            )
+            await self._task_manager.get_completed_pages(provider),
         )
 
         # Calculate pages that need to be parsed
@@ -280,7 +277,7 @@ class GlobalTitlesUpdater:
         tasks_to_cancel = [
             self._idle_task,
             self._worker_manager_task,
-            self._worker_scaler_task
+            self._worker_scaler_task,
         ]
 
         for task in tasks_to_cancel:

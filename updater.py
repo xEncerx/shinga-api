@@ -34,5 +34,5 @@ async def main():
 if __name__ == "__main__":
     setup_logging("updater")
 
-    # FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
     asyncio.run(main())
