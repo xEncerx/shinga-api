@@ -6,6 +6,7 @@ from app.infrastructure.db.models import *
 from app.domain.models import Pagination
 from .user import UserTitlePublic
 
+
 class TitlePublic(BaseModel):
     id: str
 
@@ -35,15 +36,46 @@ class TitlePublic(BaseModel):
     updated_at: datetime
     extra_data: dict[str, Any] | None = Field(default=None)
 
+
 class TitleWithUserData(BaseModel):
     title: TitlePublic
     user_data: UserTitlePublic | None = Field(default=None)
+
 
 class TitleSearchResponse(BaseModel):
     message: str = Field(default="")
     content: list[TitleWithUserData] = Field(default=[])
 
+
 class TitlePaginationResponse(BaseModel):
     message: str = Field(default="")
     pagination: Pagination
     content: list[TitleWithUserData] = Field(default=[])
+
+
+class TitleSortBy(str, Enum):
+    rating = "rating"
+    popularity = "popularity"
+    favorites = "favorites"
+    chapters = "chapters"
+    views = "views"
+
+
+class TitleSortOrder(str, Enum):
+    asc = "asc"
+    desc = "desc"
+
+
+class TitleSearchFields(BaseModel):
+    query: str | None = Field(default=None)
+    genres: list[str] | None = Field(default=None)
+    status: list[TitleStatus] | None = Field(default=None)
+    type_: list[TitleType] | None = Field(default=None)
+    min_rating: float | None = Field(default=None, ge=0, le=10)
+    max_rating: float | None = Field(default=None, ge=0, le=10)
+    min_chapters: int | None = Field(default=None, ge=0)
+    max_chapters: int | None = Field(default=None, ge=0)
+    sort_by: TitleSortBy = Field(default=TitleSortBy.rating)
+    sort_order: TitleSortOrder = Field(default=TitleSortOrder.desc)
+    page: int = Field(default=1, ge=1)
+    per_page: int = Field(default=21, ge=1, le=50)
