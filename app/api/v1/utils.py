@@ -31,7 +31,11 @@ def pydantic_exception_handler(_: Request, exc: RequestValidationError):
         content={
             "status_code": 422,
             "error": "ValidationError",
-            "detail": first_error["msg"] if first_error else "Unknown",
+            "detail": (
+                f"[{first_error['loc']}] {first_error['msg']}"
+                if first_error
+                else "Unknown"
+            ),
         },
     )
 

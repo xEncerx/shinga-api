@@ -73,9 +73,6 @@ class TitleGenre(Enum):
                 return genre
             if en and genre.value.en.lower() == en.strip().lower():
                 return genre
-
-        # TODO: Remove print later
-        print(f"Genre '{en}' not found.")
         return None
 
     ACTION = Genre(ru="Экшен", en="Action")

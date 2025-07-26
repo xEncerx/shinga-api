@@ -33,5 +33,5 @@ app.add_exception_handler(RequestValidationError, pydantic_exception_handler)  #
 
 
 if __name__ == "__main__":
-    setup_logging()
+    setup_logging("app")
     uvicorn.run(app, log_config=None)

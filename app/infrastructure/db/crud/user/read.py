@@ -110,8 +110,7 @@ class ReadOperations:
                 count_stmt = select(func.count()).select_from(stmt.subquery())
 
                 # Execute the count query
-                total_count = (await session.exec(count_stmt)).first()
-                total_count = total_count if total_count is not None else 0
+                total_count = (await session.exec(count_stmt)).first() or 0
 
                 stmt = stmt.offset(offset).limit(per_page)
                 data = await session.exec(stmt)
