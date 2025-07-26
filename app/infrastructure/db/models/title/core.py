@@ -1,5 +1,5 @@
+from sqlmodel import SQLModel, Field, Column, DateTime, func, Index
 from sqlalchemy.dialects.postgresql import TSVECTOR, JSONB, ARRAY
-from sqlmodel import SQLModel, Field, Column, DateTime, func
 from datetime import datetime, timezone
 from sqlmodel import Enum as SQLEnum
 from typing import Any
@@ -16,36 +16,51 @@ class Title(SQLModel, table=True):
     name_en: str | None = Field(default=None)
     name_ru: str | None = Field(default=None)
     alt_names: list[str] = Field(default=[], sa_type=JSONB)
-    type_: TitleType = Field(sa_column=SQLEnum(TitleType))  # type: ignore
-    chapters: int = Field(default=0)
+    type_: TitleType = Field(
+        sa_column=Column(
+            SQLEnum(TitleType),
+            nullable=False,
+            index=True,
+        ),
+    )  # type: ignore
+    chapters: int = Field(default=0, index=True)
     volumes: int = Field(default=0)
-    views: int = Field(default=0)
+    views: int = Field(default=0, index=True)
 
     # In app rating
     in_app_rating: float | None = Field(default=0, ge=0, le=10)
     in_app_scored_by: int | None = Field(default=0)
 
-    status: TitleStatus = Field(sa_column=SQLEnum(TitleStatus))  # type: ignore
+    status: TitleStatus = Field(
+        sa_column=Column(
+            SQLEnum(TitleStatus),
+            nullable=False,
+            index=True,
+        ),
+    )  # type: ignore
     date: TitleReleaseTime = Field(sa_type=JSONBWithModel(TitleReleaseTime))  # type: ignore
     # Mal or other providers rating
-    rating: float = Field(ge=0, le=10)
+    rating: float = Field(ge=0, le=10, index=True)
 
     scored_by: int = Field(default=0)
     popularity: int = Field(default=0)
     favorites: int = Field(default=0)
-    description: TitleDescription = Field(sa_type=JSONBWithModel(TitleDescription)) # type: ignore
+    description: TitleDescription = Field(sa_type=JSONBWithModel(TitleDescription))  # type: ignore
     authors: list[str] = Field(default=[], sa_type=JSONB)
     genres: list[TitleGenre] = Field(
         sa_column=Column(
             ARRAY(SQLEnum(TitleGenre)),
             nullable=True,
+            index=True,
         ),
-    ) # type: ignore
+    )  # type: ignore
 
     # Timestamps for creation and last update
     created_at: datetime = Field(
         sa_column=Column(
-            DateTime(timezone=True), nullable=False, server_default=func.now()
+            DateTime(timezone=True),
+            nullable=False,
+            server_default=func.now(),
         ),
         default_factory=lambda: datetime.now(timezone.utc),
     )
@@ -70,6 +85,10 @@ class Title(SQLModel, table=True):
     extra_data: dict[str, Any] = Field(default={}, sa_type=JSONB)
 
     # Full-text search vector for efficient searching
-    search_vector: str | None = Field(
-        default=None, sa_type=TSVECTOR, sa_column_kwargs={"index": True}
+    search_vector: str | None = Field(default=None, sa_type=TSVECTOR, index=True)
+
+    __table_args__ = (
+        Index('idx_title_search_vector', 'search_vector', postgresql_using='gin'),
+        Index('idx_title_name_ru_trigram', 'name_ru', postgresql_using='gin', postgresql_ops={'name_ru': 'gin_trgm_ops'}),
+        Index('idx_title_name_en_trigram', 'name_en', postgresql_using='gin', postgresql_ops={'name_en': 'gin_trgm_ops'}),
     )

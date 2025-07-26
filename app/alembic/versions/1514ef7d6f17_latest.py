@@ -1,8 +1,8 @@
-"""initial
+"""latest
 
 Revision ID: 1514ef7d6f17
 Revises: 
-Create Date: 2025-07-09 19:10:46.015622
+Create Date: 2025-07-26 18:54:32.018622
 
 """
 from typing import Sequence, Union
@@ -49,15 +49,21 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('source_provider', sa.Enum('MAL', 'REMANGA', 'SHIKIMORI', 'CUSTOM', name='sourceprovider'), nullable=False),
     sa.Column('source_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('extra_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('extra_data', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('search_vector', postgresql.TSVECTOR(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_titles_chapters'), 'titles', ['chapters'], unique=False)
+    op.create_index(op.f('ix_titles_genres'), 'titles', ['genres'], unique=False)
     op.create_index(op.f('ix_titles_id'), 'titles', ['id'], unique=False)
+    op.create_index(op.f('ix_titles_rating'), 'titles', ['rating'], unique=False)
     op.create_index(op.f('ix_titles_search_vector'), 'titles', ['search_vector'], unique=False)
+    op.create_index(op.f('ix_titles_status'), 'titles', ['status'], unique=False)
+    op.create_index(op.f('ix_titles_type_'), 'titles', ['type_'], unique=False)
+    op.create_index(op.f('ix_titles_views'), 'titles', ['views'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('username', sqlmodel.sql.sqltypes.AutoString(length=50), nullable=False),
+    sa.Column('username', sqlmodel.sql.sqltypes.AutoString(length=20), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('hashed_password', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('google_id', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
@@ -344,8 +350,14 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_google_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
+    op.drop_index(op.f('ix_titles_views'), table_name='titles')
+    op.drop_index(op.f('ix_titles_type_'), table_name='titles')
+    op.drop_index(op.f('ix_titles_status'), table_name='titles')
     op.drop_index(op.f('ix_titles_search_vector'), table_name='titles')
+    op.drop_index(op.f('ix_titles_rating'), table_name='titles')
     op.drop_index(op.f('ix_titles_id'), table_name='titles')
+    op.drop_index(op.f('ix_titles_genres'), table_name='titles')
+    op.drop_index(op.f('ix_titles_chapters'), table_name='titles')
     op.drop_table('titles')
 
     # Drop triggers first
