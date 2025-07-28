@@ -112,15 +112,15 @@ class ReadOperations:
 
                 # Filter by genres
                 if genres:
-                    conditions.append(Title.genres.op("@>")(genres))  # type: ignore
+                    conditions.append(Title.genres.op("@>")(set(genres)))  # type: ignore
 
                 # Filter by status
                 if status:
-                    conditions.append(Title.status.in_(status))  # type: ignore
+                    conditions.append(Title.status.in_(set(status)))  # type: ignore
 
                 # Filter by type
                 if type_:
-                    conditions.append(Title.type_.in_(type_))  # type: ignore
+                    conditions.append(Title.type_.in_(set(type_)))  # type: ignore
 
                 # Filter by rating
                 if min_rating is not None:
