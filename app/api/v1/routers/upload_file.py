@@ -12,7 +12,7 @@ from app.api.v1.schemas import *
 router = APIRouter(prefix="/file")
 
 
-@router.put("/avatar")
+@router.post("/avatar")
 @limiter.limit("1/second;30/minute")
 async def upload_avatar(
     current_user: CurrentUserDep,
