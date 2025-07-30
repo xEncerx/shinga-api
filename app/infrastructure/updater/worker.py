@@ -76,7 +76,7 @@ class FullParserWorker:
             match provider:
                 case SourceProvider.REMANGA:
                     # Remanga is sensitive to proxies. But since it has no rate limits, we can do without them.
-                    page_data = await self._remanga_client.get_page(page, limit=1000)
+                    page_data = await self._remanga_client.get_page(page)
                 case SourceProvider.MAL:
                     page_data = await self._mal_client.get_page(page=page, proxy=proxy)
                 case _:

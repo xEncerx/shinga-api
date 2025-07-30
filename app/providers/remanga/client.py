@@ -45,29 +45,26 @@ class RemangaProvider(BaseProvider):
     async def get_page(
         self,
         page: int,
-        limit: int = 50,
+        limit: int = 30,
         proxy: str | None = None,
     ) -> TitlePagination:
         """
         Fetch a page of titles from Remanga.
-        ! Remanga has't yet fixed the bug and u can get an unlimited titles per page.
-
         Args:
             page (int): The page number to fetch.
-            limit (int): The number of titles per page (default is 50/∞ of max pages).
+            limit (int): The number of titles per page (default is 30/30 of max pages).
             proxy (str | None): Optional proxy URL for the request.
 
         Returns:
             TitlePagination: A pagination object containing the list of titles and pagination info.
         """
-        if page < 1:
-            raise ValueError("Page must be >= 1")
+        if page < 1 or (1 < limit < 30):
+            raise ValueError("Page must be >= 1 and limit must be between 1 and 30.")
 
         try:
             data = await self.get(
                 url=f"v2/search/catalog/?page={page}&count={limit}&ordering=-id",
                 proxy=proxy,
-                timeout=ClientTimeout(total=100)
             )
 
             if not data or not data["results"]:

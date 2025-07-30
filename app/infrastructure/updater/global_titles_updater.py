@@ -173,7 +173,7 @@ class GlobalTitlesUpdater:
             elif provider == SourceProvider.REMANGA:
                 # Remanga doesn't have clear pagination, use a conservative estimate
                 # or implement a method to determine the last page
-                return 70  # Remanga has around 70 pages * 1000 = 70000 titles
+                return 1900  # Remanga has around 1900 pages * 30 = 57000 titles
 
         except Exception as e:
             logger.error(f"Failed to get total pages for {provider.name}: {e}")
