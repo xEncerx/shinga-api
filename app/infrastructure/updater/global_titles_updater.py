@@ -171,9 +171,11 @@ class GlobalTitlesUpdater:
                     return page_data.pagination.last_visible_page
 
             elif provider == SourceProvider.REMANGA:
+                # TODO: Implement a method to determine the last page
                 # Remanga doesn't have clear pagination, use a conservative estimate
-                # or implement a method to determine the last page
-                return 1900  # Remanga has around 1900 pages * 30 = 57000 titles
+                # Remanga has around 1900 pages * 30 = 57000 titles
+                # But due to a bug with the page limit (maximum 1000), it's currently not possible to parse all titles.
+                return 999
 
         except Exception as e:
             logger.error(f"Failed to get total pages for {provider.name}: {e}")
