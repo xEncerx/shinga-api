@@ -1,6 +1,7 @@
 from fastapi import UploadFile
 from typing import Literal
 from pathlib import Path
+from uuid import uuid4
 from PIL import Image
 import aiofiles
 import asyncio
@@ -131,6 +132,20 @@ class MediaManger(AsyncHttpClient):
             )
 
             return output_buffer.getvalue()
+        
+    def delete_file(self, file_path: str) -> None:
+        """
+        Delete a file from the storage (if it exists).
+
+        Args:
+            file_path (str): Path to the file to delete
+        """
+        path = Path(f"{self.storage_path.parent}/{file_path}")
+        if path.exists():
+            try:
+                path.unlink()
+            except Exception as e:
+                logger.error(f"Failed to delete file {file_path}: {e}")
 
     async def save_cover(
         self,
@@ -195,12 +210,17 @@ class MediaManger(AsyncHttpClient):
 
         return result
 
-    async def save_avatar(
-        self,
-        avatar: UploadFile,
-        user_id: str,
-    ) -> str | None:
-        filename = f"avatar_{user_id}.webp"
+    async def save_avatar(self, avatar: UploadFile) -> str | None:
+        """
+        Save a user's avatar image.
+
+        Args:
+            avatar (UploadFile): Uploaded avatar file
+
+        Returns:
+            str: Public Path with UUID of the saved avatar
+        """
+        filename = f"{uuid4()}.webp"
         file_path = self.avatars_path / filename
 
         avatar_bytes = await avatar.read()

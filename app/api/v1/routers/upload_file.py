@@ -9,7 +9,7 @@ from app.api.deps import CurrentUserDep
 from app.api.v1.schemas import *
 
 
-router = APIRouter(prefix="/file")
+router = APIRouter(prefix="/upload/file", tags=["upload"])
 
 
 @router.post("/avatar")
@@ -34,10 +34,14 @@ async def upload_avatar(
 
     try:
         async with MediaManger() as media_manager:
-            avatar_path = await media_manager.save_avatar(avatar, current_user.id)  # type: ignore
+            # Save new avatar
+            avatar_path = await media_manager.save_avatar(avatar)  # type: ignore
 
-        if not avatar_path:
-            raise FileRelatedError(detail="Failed to save avatar. Try again later.")
+            if not avatar_path:
+                raise FileRelatedError(detail="Failed to save avatar. Try again later.")
+            
+            # Delete old avatar if it exists
+            media_manager.delete_file(current_user.avatar)
 
         await UserCRUD.update.fields(
             user_id=current_user.id,  # type: ignore

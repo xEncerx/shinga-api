@@ -17,7 +17,7 @@ async def lifespan(_: FastAPI):
 
     yield
     # Cleanup resources when the app is shutting down
-    await redis.close()
+    await redis.aclose()
 
 
 app = FastAPI(
