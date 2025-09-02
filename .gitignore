@@ -1,10 +1,19 @@
+# Environment
 .env
+venv/
+
+# Cache
+__pycache__/
+temp/
+
+# Logs & backups
 logs/
 backups/
 install/
+
+# IDE
 .idea/
-__pycache__
-temp/
+
+# Media & txt
 app/api/media/**
 app/core/*.txt
-venv/
