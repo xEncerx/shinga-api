@@ -8,9 +8,11 @@ from app.infrastructure.db.session import get_session
 from app.infrastructure.db.models import *
 from app.core import logger
 
+
 class TitleSearchMode(str, Enum):
     GLOBAL = "global"
     USER_ONLY = "user_only"
+
 
 class TitleRepository:
     @staticmethod
@@ -136,8 +138,11 @@ class TitleRepository:
                     )
 
                 # - Sort by other columns
-                default_sort_column = UserTitles.updated_at if mode == TitleSearchMode.USER_ONLY else Title.rating
-                sort_column = getattr(Title, sort_by, default_sort_column)
+                if sort_by is TitleSortBy.user_updated_at:
+                    sort_column = UserTitles.updated_at
+                else:
+                    sort_column = getattr(Title, sort_by, Title.rating)
+
                 if sort_order.lower() == "desc":
                     stmt = stmt.order_by(desc(sort_column))
                 else:

@@ -59,6 +59,7 @@ class TitleSortBy(str, Enum):
     favorites = "favorites"
     chapters = "chapters"
     views = "views"
+    user_updated_at = "user_updated_at"
 
 
 class TitleSortOrder(str, Enum):
