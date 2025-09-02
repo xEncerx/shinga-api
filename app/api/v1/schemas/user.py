@@ -66,9 +66,3 @@ class UserTitleUpdatableFields(BaseModel):
     user_rating: int = Field(default=0, ge=0, le=10)
     current_url: str | None = Field(default=None)
     bookmark: BookMarkType = Field(default=BookMarkType.NOT_READING)
-
-
-class GetUserTitlesFields(BaseModel):
-    page: int = Field(default=1, ge=1)
-    per_page: int = Field(default=10, ge=1, le=100)
-    bookmark: BookMarkType | None = Field(default=None)

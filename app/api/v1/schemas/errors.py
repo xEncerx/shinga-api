@@ -1,20 +1,5 @@
-from fastapi.responses import JSONResponse
 from fastapi import HTTPException, status
-from typing import Any, Mapping
-
-from starlette.background import BackgroundTask
-
-
-class HttpErrorResponse(JSONResponse):
-    def __init__(
-        self,
-        content: Any,
-        status_code: int = 200,
-        headers: Mapping[str, str] | None = None,
-        media_type: str | None = None,
-        background: BackgroundTask | None = None,
-    ) -> None:
-        super().__init__(content, status_code, headers, media_type, background)
+from typing import Any
 
 
 # Base class for API exceptions

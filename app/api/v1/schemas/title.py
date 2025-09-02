@@ -79,3 +79,4 @@ class TitleSearchFields(BaseModel):
     sort_order: TitleSortOrder = Field(default=TitleSortOrder.desc)
     page: int = Field(default=1, ge=1)
     per_page: int = Field(default=21, ge=1, le=50)
+    bookmark: BookMarkType | None = Field(default=None)

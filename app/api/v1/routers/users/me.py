@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 
+from app.domain.use_cases import TitleSearchService, TitleSearchMode
 from app.infrastructure.db.crud import *
 from app.api.deps import CurrentUserDep
 from app.api.v1.schemas import *
@@ -92,6 +93,7 @@ async def upsert_user_title(
             detail="Failed to update user title. Please try again later.",
         )
 
+
 @router.get("/votes")
 @limiter.limit("3/second;60/minute")
 async def get_user_votes(
@@ -110,8 +112,7 @@ async def get_user_votes(
 @router.get("/titles")
 @limiter.limit("3/second;60/minute")
 async def get_user_titles(
-    query: GetUserTitlesFields = GetUserTitlesFields(),
-    *,
+    search_fields: TitleSearchFields,
     current_user: CurrentUserDep,
     request: Request,
 ) -> TitlePaginationResponse:
@@ -120,24 +121,8 @@ async def get_user_titles(
 
     **Limits: 3 requests per second, 60 requests per minute.**
     """
-    user_data = await UserCRUD.read.user_titles(
+    return await TitleSearchService.search(
+        params=search_fields,
         username=current_user.username,
-        page=query.page,
-        per_page=query.per_page,
-        bookmark=query.bookmark,
-    )
-
-    return TitlePaginationResponse(
-        pagination=Pagination.model_validate(user_data["pagination"]),
-        content=[
-            TitleWithUserData(
-                title=TitlePublic.model_validate(data["title"]),
-                user_data=(
-                    UserTitlePublic.model_validate(data["user_data"])
-                    if data["user_data"]
-                    else None
-                ),
-            )
-            for data in user_data["content"]
-        ],
+        mode=TitleSearchMode.USER_ONLY,
     )
