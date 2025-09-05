@@ -45,6 +45,35 @@ async def forgot_password(
 
     return Message(message="Reset code sent to your email.")
 
+@router.post("/verify-reset-code")
+@limiter.limit("5/minute")
+async def verify_reset_code(
+    verify_form: VerifyResetCodeForm,
+    request: Request,
+):
+    """
+    Verifies the password reset code sent to the user's email.
+
+    **Limits the request to 5 per minute.**
+
+    Args:
+        verify_form (VerifyResetCodeForm): Form containing the user's email and reset code.
+
+    Returns:
+        Message: Confirmation message indicating the reset code is valid.
+
+    Raises:
+        EmailNotSent: If the reset code is not found or has expired.
+        EmailCodeMismatch: If the provided reset code does not match the stored code.
+    """
+    stored_code = await redis.get(f"reset_code:{verify_form.email}")
+
+    if not stored_code:
+        raise EmailNotSent(detail="Reset code not found or expired.")
+    if stored_code.decode() != verify_form.code:
+        raise EmailCodeMismatch(detail="Reset code does not match.")
+
+    return Message(message="Reset code is valid.")
 
 @router.post("/reset")
 @limiter.limit("2/minute;10/day")

@@ -22,6 +22,11 @@ class UserPasswordRestore(BaseModel):
     new_password: str = Field(..., min_length=8, max_length=128)
 
 
+class VerifyResetCodeForm(BaseModel):
+    email: EmailStr = Field(..., max_length=255)
+    code: str = Field(..., min_length=6, max_length=6)
+
+
 class UserPublic(BaseModel):
     username: str
     email: EmailStr
