@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request
+import re
 
 from app.domain.models.exceptions import UserAlreadyExistsError
 from app.core.security import is_password_strong
@@ -7,6 +8,11 @@ from app.core import logger, limiter
 from ...schemas import *
 
 router = APIRouter()
+
+def is_valid_username(username: str) -> bool:
+    """Validate the username to ensure it contains only allowed characters."""
+    pattern = r'^[a-zA-Z0-9_]+$'
+    return bool(re.match(pattern, username))
 
 
 @router.post("/signup")
@@ -29,10 +35,13 @@ async def signup(
     Raises:
         PasswordTooWeak: If the provided password does not meet strength requirements.
         UserAlreadyExists: If a user with the provided username or email already exists.
+        UsernameValidationError: If the username contains invalid characters.
         UserRelatedError: If there is an error related to user creation, such as database issues.
     """
     if not is_password_strong(user_in.password):
         raise PasswordTooWeak()
+    if not is_valid_username(user_in.username):
+        raise UsernameValidationError()
 
     try:
         await create_user(

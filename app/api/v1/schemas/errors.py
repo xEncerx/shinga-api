@@ -86,6 +86,11 @@ class IncorrectUsernameOrPassword(UserRelatedError):
     headers = {"WWW-Authenticate": "Bearer"}
 
 
+class UsernameValidationError(UserRelatedError):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = "Only letters, numbers and underscore are allowed"
+
+
 class UserNotAuthorized(UserRelatedError):
     status_code = status.HTTP_401_UNAUTHORIZED
     detail = "User not authorized"
