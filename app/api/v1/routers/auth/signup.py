@@ -1,18 +1,13 @@
 from fastapi import APIRouter, Request
-import re
 
 from app.domain.models.exceptions import UserAlreadyExistsError
 from app.core.security import is_password_strong
 from app.domain.use_cases import create_user
+from ...utils import is_valid_username
 from app.core import logger, limiter
 from ...schemas import *
 
 router = APIRouter()
-
-def is_valid_username(username: str) -> bool:
-    """Validate the username to ensure it contains only allowed characters."""
-    pattern = r'^[a-zA-Z0-9_]+$'
-    return bool(re.match(pattern, username))
 
 
 @router.post("/signup")

@@ -64,6 +64,12 @@ class EmailError(BaseAPIException):
     detail = "Email error"
 
 
+# --- Email exceptions ---
+class EmailValidationError(EmailError):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = "Invalid email format"
+
+
 # --- User exceptions ---
 class UserAlreadyExists(UserRelatedError):
     status_code = status.HTTP_409_CONFLICT
@@ -88,7 +94,7 @@ class IncorrectUsernameOrPassword(UserRelatedError):
 
 class UsernameValidationError(UserRelatedError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    detail = "Only letters, numbers and underscore are allowed"
+    detail = "Only letters, numbers and (-_) are allowed"
 
 
 class UserNotAuthorized(UserRelatedError):

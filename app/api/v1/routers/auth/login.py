@@ -2,10 +2,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends, Request
 from typing import Annotated
 
-from ...schemas import Token, IncorrectUsernameOrPassword
+from ...utils import is_valid_email, is_valid_username
 from app.infrastructure.db.crud import UserCRUD
 from app.core.security import *
 from app.core import limiter
+from ...schemas import *
 
 router = APIRouter()
 
@@ -22,15 +23,26 @@ async def login_access_token(
     **Limits: 5 requests per minute**
 
     Args:
-        form_data (OAuth2PasswordRequestForm): Form data containing username and password.
+        form_data (OAuth2PasswordRequestForm): Form data containing username or email and password.
 
     Returns:
         Token: A token object containing the access token.
 
     Raises:
-        UserNotFound: If the user is not found or the credentials are incorrect.
+        IncorrectUsernameOrPassword: If the user is not found or the credentials are incorrect.
     """
-    user = await UserCRUD.read.user(username=form_data.username)
+    username_or_email = form_data.username.strip()
+
+    if "@" in username_or_email:
+        if not is_valid_email(username_or_email):
+            raise EmailValidationError()
+        search_value = {"email": username_or_email}
+    else:
+        if not is_valid_username(username_or_email):
+            raise UsernameValidationError()
+        search_value = {"username": username_or_email}
+
+    user = await UserCRUD.read.user(**search_value)  # type: ignore
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise IncorrectUsernameOrPassword()
