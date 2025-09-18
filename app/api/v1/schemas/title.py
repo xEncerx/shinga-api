@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from app.infrastructure.db.models import *
-from app.domain.models import Pagination
+from app.domain.models import *
 from .user import UserTitlePublic
 
 
@@ -51,20 +51,6 @@ class TitlePaginationResponse(BaseModel):
     message: str = Field(default="")
     pagination: Pagination
     content: list[TitleWithUserData] = Field(default=[])
-
-
-class TitleSortBy(str, Enum):
-    rating = "rating"
-    popularity = "popularity"
-    favorites = "favorites"
-    chapters = "chapters"
-    views = "views"
-    user_updated_at = "user_updated_at"
-
-
-class TitleSortOrder(str, Enum):
-    asc = "asc"
-    desc = "desc"
 
 
 class TitleSearchFields(BaseModel):
