@@ -24,7 +24,7 @@ async def global_search(
     """
     return await TitleSearchService.search(
         params=search_fields,
-        username=current_user.username,
+        user_id=current_user.id,
         mode=TitleSearchMode.GLOBAL,
     )
 
@@ -64,5 +64,5 @@ async def get_title_recommendations(
     """
     return await TitleSearchService.get_recommendations(
         title_id,
-        username=current_user.username,
+        user_id=current_user.id,
     )

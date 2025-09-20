@@ -40,7 +40,7 @@ class TitleSearchService:
         cls,
         params: TitleSearchFields,
         *,
-        username: str | None,
+        user_id: int | None,
         mode: TitleSearchMode = TitleSearchMode.GLOBAL,
     ) -> TitlePaginationResponse:
         """
@@ -51,7 +51,7 @@ class TitleSearchService:
 
         result = await TitleCRUD.read.search(
             mode=mode,
-            username=username,
+            user_id=user_id,
             **data,
         )
 
@@ -73,7 +73,7 @@ class TitleSearchService:
     @staticmethod
     async def get_recommendations(
         title_id: str,
-        username: str | None = None,
+        user_id: int | None = None,
         limit: int = 20,
     ) -> TitleSearchResponse:
         """
@@ -82,7 +82,7 @@ class TitleSearchService:
 
         Args:
             title_id (str): The ID of the source title.
-            username (str | None): The username for user-specific data.
+            user_id (int | None): The user ID for user-specific data.
             limit (int): Number of recommendations to return.
 
         Returns:
@@ -90,7 +90,7 @@ class TitleSearchService:
         """
         result = await TitleCRUD.read.recommendations(
             title_id=title_id,
-            username=username,
+            user_id=user_id,
             limit=limit,
         )
 
@@ -111,20 +111,20 @@ class TitleSearchService:
     @staticmethod
     async def get_title_by_id(
         title_id: str,
-        username: str | None = None,
+        user_id: int | None = None,
     ) -> TitleWithUserData | None:
         """
-        Get a title by its ID, including user-specific data if a username is provided.
+        Get a title by its ID, including user-specific data if a user ID is provided.
 
         Args:
             title_id (str): The ID of the title to retrieve.
-            username (str | None): The username for user-specific data.
+            user_id (int | None): The user ID for user-specific data.
         Returns:
             TitleWithUserData | None: The title with user data or None if not found.
         """
         result = await TitleCRUD.read.with_user_data(
             title_id=title_id,
-            username=username,
+            user_id=user_id,
         )
         if not result or not result.get("title"):
             return None

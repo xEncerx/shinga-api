@@ -62,7 +62,7 @@ class ReadOperations:
                 return None
 
     @staticmethod
-    async def votes(username: str) -> UserVotes:
+    async def votes(user_id: int) -> UserVotes:
         """
         Get the voting statistics for a user.
         """
@@ -70,7 +70,7 @@ class ReadOperations:
             try:
                 stmt = select(UserTitles.user_rating).where(
                     and_(
-                        UserTitles.username == username,
+                        UserTitles.user_id == user_id,
                         UserTitles.user_rating > 0,
                     )
                 )

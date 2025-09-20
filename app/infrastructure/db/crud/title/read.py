@@ -46,14 +46,14 @@ class ReadOperations:
     @staticmethod
     async def with_user_data(
         title_id: str,
-        username: str | None,
+        user_id: int | None,
     ) -> dict[str, Any] | None:
         """
         Fetch title and user-specific data.
 
         Args:
             title_id (str): The ID of the title to fetch.
-            username (str | None): The username for user-specific data.
+            user_id (int | None): The user ID for user-specific data.
 
         Returns:
             A dictionary formatted as follows
@@ -73,7 +73,7 @@ class ReadOperations:
                         UserTitles,
                         and_(
                             UserTitles.title_id == Title.id,
-                            UserTitles.username == username,
+                            UserTitles.user_id == user_id,
                         ),
                     )
                     .where(Title.id == title_id)
@@ -105,7 +105,7 @@ class ReadOperations:
         page: int = 1,
         per_page: int = 21,
         bookmark: BookMarkType | None = None,
-        username: str | None = None,
+        user_id: int | None = None,
     ) -> dict[str, Any]:
         """
         Advanced search with filters, sorting and pagination.
@@ -125,7 +125,7 @@ class ReadOperations:
             page (int): Page number for pagination.
             per_page (int): Number of results per page.
             bookmark (BookMarkType | None): Bookmark for pagination.
-            username (str | None): Username for user-specific data.
+            user_id (int | None): User ID for user-specific data.
 
         Returns:
             A dictionary formatted as follows
@@ -150,14 +150,14 @@ class ReadOperations:
                     stmt = (
                         select(Title, UserTitles)
                         .join(UserTitles, UserTitles.title_id == Title.id)  # type: ignore
-                        .where(UserTitles.username == username)
+                        .where(UserTitles.user_id == user_id)
                     )
                 else:
                     stmt = select(Title, UserTitles).outerjoin(
                         UserTitles,
                         and_(
                             UserTitles.title_id == Title.id,
-                            UserTitles.username == username,
+                            UserTitles.user_id == user_id,
                         ),
                     )
 
@@ -268,7 +268,7 @@ class ReadOperations:
     @staticmethod
     async def recommendations(
         title_id: str,
-        username: str | None = None,
+        user_id: int | None = None,
         limit: int = 20,
     ) -> dict[str, Any]:
         """
@@ -277,7 +277,7 @@ class ReadOperations:
 
         Args:
             title_id (str): The ID of the source title.
-            username (str | None): The username for user-specific data.
+            user_id (int | None): The user ID for user-specific data.
             limit (int): Number of recommendations to return.
 
         Returns:
@@ -310,7 +310,7 @@ class ReadOperations:
                         UserTitles,
                         and_(
                             UserTitles.title_id == Title.id,
-                            UserTitles.username == username,
+                            UserTitles.user_id == user_id,
                         ),
                     )
                     .where(

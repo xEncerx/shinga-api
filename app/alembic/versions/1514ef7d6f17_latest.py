@@ -87,7 +87,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_index(op.f('ix_users_yandex_id'), 'users', ['yandex_id'], unique=False)
     op.create_table('user_titles',
-    sa.Column('username', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('title_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('user_rating', sa.Integer(), nullable=False),
     sa.Column('current_url', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
@@ -95,11 +95,11 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('extra_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['title_id'], ['titles.id'], ),
-    sa.ForeignKeyConstraint(['username'], ['users.username'], ),
-    sa.PrimaryKeyConstraint('username', 'title_id')
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('user_id', 'title_id')
     )
     op.create_index(op.f('ix_user_titles_title_id'), 'user_titles', ['title_id'], unique=False)
-    op.create_index(op.f('ix_user_titles_username'), 'user_titles', ['username'], unique=False)
+    op.create_index(op.f('ix_user_titles_user_id'), 'user_titles', ['user_id'], unique=False)
 
     # ### TRIGGERS ###
     # Enable pg_trgm extension
@@ -160,22 +160,22 @@ def upgrade() -> None:
             END IF;
         END IF;
 
-        -- Determine username and title_id based on operation
+        -- Determine user_id and title_id based on operation
         DECLARE
-            target_username VARCHAR;
+            target_user_id INTEGER;
             target_title_id VARCHAR;
         BEGIN
             IF TG_OP = 'DELETE' THEN
-                target_username := OLD.username;
+                target_user_id := OLD.user_id;
                 target_title_id := OLD.title_id;
             ELSE
-                target_username := NEW.username;
+                target_user_id := NEW.user_id;
                 target_title_id := NEW.title_id;
             END IF;
 
             -- Get current user stats
             SELECT count_votes, avg_rating INTO user_current_votes, user_current_avg
-            FROM users WHERE username = target_username;
+            FROM users WHERE id = target_user_id;
 
             -- Update user statistics
             IF old_rating = 0 AND new_rating > 0 THEN
@@ -186,7 +186,7 @@ def upgrade() -> None:
                         WHEN count_votes = 0 THEN new_rating::DECIMAL
                         ELSE (avg_rating * count_votes + new_rating) / (count_votes + 1)
                     END
-                WHERE username = target_username;
+                WHERE id = target_user_id;
                 
             ELSIF old_rating > 0 AND new_rating = 0 THEN
                 -- Remove rating
@@ -196,7 +196,7 @@ def upgrade() -> None:
                         WHEN count_votes <= 1 THEN 0
                         ELSE (avg_rating * count_votes - old_rating) / (count_votes - 1)
                     END
-                WHERE username = target_username;
+                WHERE id = target_user_id;
                 
             ELSIF old_rating > 0 AND new_rating > 0 THEN
                 -- Update existing rating
@@ -205,7 +205,7 @@ def upgrade() -> None:
                         WHEN count_votes = 0 THEN new_rating::DECIMAL
                         ELSE (avg_rating * count_votes - old_rating + new_rating) / count_votes
                     END
-                WHERE username = target_username;
+                WHERE id = target_user_id;
             END IF;
 
             -- Get current title stats
@@ -268,7 +268,6 @@ def upgrade() -> None:
     CREATE OR REPLACE FUNCTION update_user_bookmarks_count()
     RETURNS TRIGGER AS $$
     BEGIN
-        -- Обработка INSERT
         IF TG_OP = 'INSERT' THEN
             UPDATE users 
             SET count_bookmarks = jsonb_set(
@@ -280,32 +279,29 @@ def upgrade() -> None:
                 ARRAY[LOWER(NEW.bookmark::text)],
                 to_jsonb(COALESCE((count_bookmarks->>LOWER(NEW.bookmark::text))::int, 0) + 1)
             )
-            WHERE username = NEW.username;
+            WHERE id = NEW.user_id;
             
             RETURN NEW;
         END IF;
         
-        -- Обработка UPDATE
         IF TG_OP = 'UPDATE' THEN
-            -- Если bookmark изменился
             IF OLD.bookmark != NEW.bookmark THEN
                 UPDATE users 
                 SET count_bookmarks = jsonb_set(
                     jsonb_set(
                         COALESCE(count_bookmarks, '{}'::jsonb),
-                        ARRAY[LOWER(OLD.bookmark::text)],  -- Явное приведение к text
+                        ARRAY[LOWER(OLD.bookmark::text)],
                         to_jsonb(GREATEST(COALESCE((count_bookmarks->>LOWER(OLD.bookmark::text))::int, 0) - 1, 0))
                     ),
-                    ARRAY[LOWER(NEW.bookmark::text)],  -- Явное приведение к text
+                    ARRAY[LOWER(NEW.bookmark::text)],
                     to_jsonb(COALESCE((count_bookmarks->>LOWER(NEW.bookmark::text))::int, 0) + 1)
                 )
-                WHERE username = NEW.username;
+                WHERE id = NEW.user_id;
             END IF;
             
             RETURN NEW;
         END IF;
         
-        -- Обработка DELETE
         IF TG_OP = 'DELETE' THEN
             UPDATE users 
             SET count_bookmarks = jsonb_set(
@@ -314,10 +310,10 @@ def upgrade() -> None:
                     '{total}',
                     to_jsonb(GREATEST(COALESCE((count_bookmarks->>'total')::int, 0) - 1, 0))
                 ),
-                ARRAY[LOWER(OLD.bookmark::text)],  -- Явное приведение к text
+                ARRAY[LOWER(OLD.bookmark::text)],
                 to_jsonb(GREATEST(COALESCE((count_bookmarks->>LOWER(OLD.bookmark::text))::int, 0) - 1, 0))
             )
-            WHERE username = OLD.username;
+            WHERE id = OLD.user_id;
             
             RETURN OLD;
         END IF;
@@ -341,7 +337,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_user_titles_username'), table_name='user_titles')
+    op.drop_index(op.f('ix_user_titles_user_id'), table_name='user_titles')
     op.drop_index(op.f('ix_user_titles_title_id'), table_name='user_titles')
     op.drop_table('user_titles')
     op.drop_index(op.f('ix_users_yandex_id'), table_name='users')

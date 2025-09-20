@@ -84,7 +84,7 @@ async def upsert_user_title(
         raise ValidationError()
 
     result = await UserCRUD.create.user_title(
-        user_title=UserTitles(username=current_user.username, **data)
+        user_title=UserTitles(user_id=current_user.id, **data) # type: ignore
     )
     if result:
         return Message(message="User title updated successfully")
@@ -106,7 +106,7 @@ async def get_user_votes(
 
     **Limits: 3 requests per second, 60 requests per minute.**
     """
-    return await UserCRUD.read.votes(username=current_user.username)
+    return await UserCRUD.read.votes(user_id=current_user.id) # type: ignore
 
 
 @router.get("/titles")
@@ -123,6 +123,6 @@ async def get_user_titles(
     """
     return await TitleSearchService.search(
         params=search_fields,
-        username=current_user.username,
+        user_id=current_user.id,
         mode=TitleSearchMode.USER_ONLY,
     )
