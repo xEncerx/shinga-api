@@ -2,6 +2,8 @@ from ..base_provider import *
 from .parser import RemangaParser
 from app.core import logger
 
+from typing import Literal
+
 class RemangaProvider(BaseProvider):
     """
     Provider for Remanga API.
@@ -47,6 +49,7 @@ class RemangaProvider(BaseProvider):
         page: int,
         limit: int = 30,
         proxy: str | None = None,
+        ordering: Literal["id", "-id"] = "-id", # type: ignore
     ) -> TitlePagination:
         """
         Fetch a page of titles from Remanga.
@@ -54,6 +57,7 @@ class RemangaProvider(BaseProvider):
             page (int): The page number to fetch.
             limit (int): The number of titles per page (default is 30/30 of max pages).
             proxy (str | None): Optional proxy URL for the request.
+            ordering (str): The ordering of titles.
 
         Returns:
             TitlePagination: A pagination object containing the list of titles and pagination info.
@@ -63,7 +67,7 @@ class RemangaProvider(BaseProvider):
 
         try:
             data = await self.get(
-                url=f"v2/search/catalog/?page={page}&count={limit}&ordering=-id",
+                url=f"v2/search/catalog/?page={page}&count={limit}&ordering={ordering}",
                 proxy=proxy,
             )
 
