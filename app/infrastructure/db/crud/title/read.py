@@ -340,7 +340,6 @@ class ReadOperations:
                                 else_=1,
                             )
                         ),
-                        desc(Title.rating),
                         desc(Title.popularity),
                     )
                     .limit(limit)
