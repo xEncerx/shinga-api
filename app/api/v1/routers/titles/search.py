@@ -10,7 +10,7 @@ from ...schemas import *
 router = APIRouter()
 
 
-@router.get("/search")
+@router.post("/search")
 @limiter.limit("60/minute")
 async def global_search(
     search_fields: TitleSearchFields,

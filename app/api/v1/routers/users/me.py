@@ -109,7 +109,7 @@ async def get_user_votes(
     return await UserCRUD.read.votes(user_id=current_user.id) # type: ignore
 
 
-@router.get("/titles")
+@router.post("/titles")
 @limiter.limit("3/second;60/minute")
 async def get_user_titles(
     search_fields: TitleSearchFields,
