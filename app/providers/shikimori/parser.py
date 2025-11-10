@@ -3,7 +3,7 @@ from app.domain.models import TitlePagination
 from ..base_parser import *
 
 
-class ShikiParser(BaseParserProvider):
+class ShikimoriParser(BaseParserProvider):
     @staticmethod
     def parse(data: dict[str, Any]) -> Title:
         id_ = (
@@ -22,10 +22,10 @@ class ShikiParser(BaseParserProvider):
             name_en=data["english"],
             name_ru=data.get("russian"),
             alt_names=data.get("synonyms", []) or [],
-            type_=TypeConverter.from_shiki(data["kind"]),
+            type_=TypeConverter.from_shikimori(data["kind"]),
             chapters=data.get("chapters", 0) or 0,
             volumes=data.get("volumes", 0) or 0,
-            status=StatusConverter.from_shiki(data["status"]),
+            status=StatusConverter.from_shikimori(data["status"]),
             date=TitleReleaseTime(
                 from_=f"{date}T00:00:00+00:00" if (date := data["airedOn"]["date"]) else None,
                 to=f"{date}T00:00:00+00:00" if (date := data["releasedOn"]["date"]) else None,

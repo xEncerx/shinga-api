@@ -3,7 +3,7 @@ from ..models.title.relations import TitleStatus
 class StatusConverter:
     """Utility class for converting title statuses between different formats."""
     @staticmethod
-    def from_shiki(shiki_status: str) -> TitleStatus:
+    def from_shikimori(shikimori_status: str) -> TitleStatus:
         """Converts a Shikimori status string to a TitleStatus enum."""
         mapping = {
             "ongoing": TitleStatus.ONGOING,
@@ -12,11 +12,11 @@ class StatusConverter:
             "paused": TitleStatus.FROZEN,
             "anons": TitleStatus.ANONS,
         }
-        return mapping.get(shiki_status.lower(), TitleStatus.UNKNOWN)
+        return mapping.get(shikimori_status.lower(), TitleStatus.UNKNOWN)
     
     @staticmethod
-    def to_shiki(status: TitleStatus) -> str:
-        raise NotImplementedError("Shiki status conversion is not implemented yet.")
+    def to_shikimori(status: TitleStatus) -> str:
+        raise NotImplementedError("Shikimori status conversion is not implemented yet.")
     
     @staticmethod
     def from_mal(mal_status: str) -> TitleStatus:

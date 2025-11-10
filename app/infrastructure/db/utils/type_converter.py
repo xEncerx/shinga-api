@@ -2,7 +2,7 @@ from ..models.title.relations import TitleType
 
 class TypeConverter:
     @staticmethod
-    def from_shiki(shiki_status: str) -> TitleType:
+    def from_shikimori(shikimori_status: str) -> TitleType:
         """Converts Shikimori title type string to TitleType enum."""
         mapping = {
             "manga": TitleType.MANGA,
@@ -13,10 +13,10 @@ class TypeConverter:
             "one_shot": TitleType.ONESHOT,
             "doujin": TitleType.DOUJIN,
         }
-        return mapping.get(shiki_status.lower(), TitleType.OTHER)
+        return mapping.get(shikimori_status.lower(), TitleType.OTHER)
     
     @staticmethod
-    def to_shiki(type_: TitleType) -> str:
+    def to_shikimori(type_: TitleType) -> str:
         raise NotImplementedError("Conversion to Shikimori type is not implemented yet.")
     
     @staticmethod
