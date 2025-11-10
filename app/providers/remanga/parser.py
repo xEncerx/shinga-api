@@ -7,11 +7,14 @@ class RemangaParser(BaseParserProvider):
         cover = data["cover"]
 
         return Title(
-            id=f"{SourceProvider.REMANGA.name}|{data['id']}",
             cover=TitleCover(
                 url="https://remanga.org" + cover["mid"] if "mid" in cover else None,
-                small_url="https://remanga.org" + cover["low"] if "low" in cover else None,
-                large_url="https://remanga.org" + cover["high"] if "high" in cover else None,
+                small_url=(
+                    "https://remanga.org" + cover["low"] if "low" in cover else None
+                ),
+                large_url=(
+                    "https://remanga.org" + cover["high"] if "high" in cover else None
+                ),
             ),
             name_en=data["secondary_name"],
             name_ru=data["main_name"],

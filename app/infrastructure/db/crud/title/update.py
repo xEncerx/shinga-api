@@ -6,7 +6,7 @@ from app.core import logger
 
 class UpdateOperations:
     @staticmethod
-    async def fields(title_id: str, **fields) -> bool:
+    async def fields(title_id: int, **fields) -> bool:
         """Update fields of an existing title in the database."""
         if not fields:
             raise ValueError("No fields provided for update")

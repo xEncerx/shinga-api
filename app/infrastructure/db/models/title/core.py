@@ -11,7 +11,7 @@ from .relations import *
 class Title(SQLModel, table=True):
     __tablename__ = "titles"  # type: ignore
 
-    id: str = Field(primary_key=True, index=True)
+    id: int | None = Field(default=None, primary_key=True, index=True)
     cover: TitleCover = Field(sa_type=JSONBWithModel(TitleCover))  # type: ignore
     name_en: str | None = Field(default=None)
     name_ru: str | None = Field(default=None)
@@ -88,7 +88,17 @@ class Title(SQLModel, table=True):
     search_vector: str | None = Field(default=None, sa_type=TSVECTOR, index=True)
 
     __table_args__ = (
-        Index('idx_title_search_vector', 'search_vector', postgresql_using='gin'),
-        Index('idx_title_name_ru_trigram', 'name_ru', postgresql_using='gin', postgresql_ops={'name_ru': 'gin_trgm_ops'}),
-        Index('idx_title_name_en_trigram', 'name_en', postgresql_using='gin', postgresql_ops={'name_en': 'gin_trgm_ops'}),
+        Index("idx_title_search_vector", "search_vector", postgresql_using="gin"),
+        Index(
+            "idx_title_name_ru_trigram",
+            "name_ru",
+            postgresql_using="gin",
+            postgresql_ops={"name_ru": "gin_trgm_ops"},
+        ),
+        Index(
+            "idx_title_name_en_trigram",
+            "name_en",
+            postgresql_using="gin",
+            postgresql_ops={"name_en": "gin_trgm_ops"},
+        ),
     )

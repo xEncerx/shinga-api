@@ -33,7 +33,7 @@ async def global_search(
 @limiter.limit("60/minute")
 @cache(expire=60 * 30)
 async def get_title_data(
-    title_id: str,
+    title_id: int,
     *,
     request: Request,
 ) -> TitleSearchResponse:
@@ -52,7 +52,7 @@ async def get_title_data(
 @router.get("/{title_id}/recommendations")
 @limiter.limit("60/minute")
 async def get_title_recommendations(
-    title_id: str,
+    title_id: int,
     *,
     current_user: CurrentUserDep,
     request: Request,

@@ -77,12 +77,14 @@ class FullParserWorker:
             match provider:
                 case SourceProvider.REMANGA:
                     # Remanga is sensitive to proxies. But since it has no rate limits, we can do without them.
-                    
+
                     # Use different ordering to get more diverse titles.
                     # Because Remanga has a limit of 1000 pages, we need to change the ordering to parse as much data as possible.
                     ordering = "-id" if datetime.now().day % 2 == 0 else "id"
 
-                    page_data = await self._remanga_client.get_page(page, ordering=ordering)
+                    page_data = await self._remanga_client.get_page(
+                        page, ordering=ordering
+                    )
                 case SourceProvider.MAL:
                     page_data = await self._mal_client.get_page(page=page, proxy=proxy)
                 case _:
@@ -125,8 +127,10 @@ class FullParserWorker:
 
     async def _process_title(self, title: Title, proxy: Optional[str]) -> None:
         """Process a single title - either update existing or create new."""
-        # Check if title exists in database
-        existing_title: Title | None = await TitleCRUD.read.by_id(title.id)  # type: ignore
+        # Check if title exists in database by source provider and source_id
+        existing_title: Title | None = await TitleCRUD.read.by_source(
+            source_provider=title.source_provider, source_id=title.source_id
+        )
 
         if existing_title:
             # Update existing title
@@ -153,6 +157,9 @@ class FullParserWorker:
 
     async def _update_existing_title(self, existing: Title, new: Title) -> None:
         """Update existing title while preserving important fields."""
+        # existing.id is guaranteed to be not None since it came from database
+        assert existing.id is not None, "Existing title must have an ID"
+
         result = await TitleCRUD.update.fields(
             title_id=existing.id,
             name_ru=new.name_ru or existing.name_ru,

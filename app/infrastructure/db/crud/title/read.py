@@ -20,7 +20,7 @@ class TitleSearchMode(str, Enum):
 class ReadOperations:
     @staticmethod
     @cache(expire=30 * 60, coder=PickleCoder)
-    async def by_id(id: str) -> Title | None:
+    async def by_id(id: int) -> Title | None:
         """Fetch a title by its ID."""
         async with get_session() as session:
             try:
@@ -30,7 +30,25 @@ class ReadOperations:
                 return None
 
     @staticmethod
-    async def for_update(time_ago: timedelta) -> list[str]:
+    async def by_source(
+        source_provider: SourceProvider,
+        source_id: str,
+    ) -> Title | None:
+        """Fetch a title by its source provider and source ID."""
+        async with get_session() as session:
+            try:
+                result = await session.exec(
+                    select(Title).where(
+                        Title.source_provider == source_provider,
+                        Title.source_id == source_id,
+                    )
+                )
+                return result.first()
+            except:
+                return None
+
+    @staticmethod
+    async def for_update(time_ago: timedelta) -> list[int]:
         """Fetch all titles that need to be updated."""
         async with get_session() as session:
             try:
@@ -45,14 +63,14 @@ class ReadOperations:
 
     @staticmethod
     async def with_user_data(
-        title_id: str,
+        title_id: int,
         user_id: int | None,
     ) -> dict[str, Any] | None:
         """
         Fetch title and user-specific data.
 
         Args:
-            title_id (str): The ID of the title to fetch.
+            title_id (int): The ID of the title to fetch.
             user_id (int | None): The user ID for user-specific data.
 
         Returns:
@@ -267,7 +285,7 @@ class ReadOperations:
 
     @staticmethod
     async def recommendations(
-        title_id: str,
+        title_id: int,
         user_id: int | None = None,
         limit: int = 20,
     ) -> dict[str, Any]:
@@ -276,7 +294,7 @@ class ReadOperations:
         Based on genre, type, rating similarity and popularity.
 
         Args:
-            title_id (str): The ID of the source title.
+            title_id (int): The ID of the source title.
             user_id (int | None): The user ID for user-specific data.
             limit (int): Number of recommendations to return.
 

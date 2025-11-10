@@ -6,14 +6,7 @@ from ..base_parser import *
 class ShikimoriParser(BaseParserProvider):
     @staticmethod
     def parse(data: dict[str, Any]) -> Title:
-        id_ = (
-            f"{SourceProvider.MAL.name}|{data['malId']}"
-            if data.get("malId")
-            else f"{SourceProvider.SHIKIMORI.name}|{data['id']}"
-        )
-
         return Title(
-            id=id_,
             cover=TitleCover(
                 url=data["poster"]["originalUrl"] if data["poster"] else None,
                 small_url=None,
@@ -27,13 +20,23 @@ class ShikimoriParser(BaseParserProvider):
             volumes=data.get("volumes", 0) or 0,
             status=StatusConverter.from_shikimori(data["status"]),
             date=TitleReleaseTime(
-                from_=f"{date}T00:00:00+00:00" if (date := data["airedOn"]["date"]) else None,
-                to=f"{date}T00:00:00+00:00" if (date := data["releasedOn"]["date"]) else None,
+                from_=(
+                    f"{date}T00:00:00+00:00"
+                    if (date := data["airedOn"]["date"])
+                    else None
+                ),
+                to=(
+                    f"{date}T00:00:00+00:00"
+                    if (date := data["releasedOn"]["date"])
+                    else None
+                ),
             ),
             rating=data.get("score", 0.0) or 0.0,
             scored_by=sum(i["count"] for i in data["scoresStats"]),
             favorites=sum(i["count"] for i in data["statusesStats"]),
-            description=TitleDescription(en=None, ru=tag_remover(data.get("description"))),
+            description=TitleDescription(
+                en=None, ru=tag_remover(data.get("description"))
+            ),
             authors=[
                 i.get("person", {}).get("name", "unknown")
                 for i in data.get("personRoles", [])

@@ -8,7 +8,7 @@ from .user import UserTitlePublic
 
 
 class TitlePublic(BaseModel):
-    id: str
+    id: int
 
     name_en: str | None = Field(default=None)
     name_ru: str | None = Field(default=None)

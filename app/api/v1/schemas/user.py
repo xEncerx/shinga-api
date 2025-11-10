@@ -48,7 +48,7 @@ class UserPublic(BaseModel):
 
 class UserTitlePublic(BaseModel):
     user_id: int
-    title_id: str
+    title_id: int
 
     user_rating: int = Field(default=0, ge=0, le=10)
     current_url: str | None = Field(default=None)
@@ -66,7 +66,7 @@ class UserUpdatableFields(BaseModel):
 
 
 class UserTitleUpdatableFields(BaseModel):
-    title_id: str
+    title_id: int
 
     user_rating: int = Field(default=0, ge=0, le=10)
     current_url: str | None = Field(default=None)
