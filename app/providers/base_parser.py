@@ -20,7 +20,7 @@ class BaseParserProvider(ABC):
         Parse the raw data from the provider into a Title model.
         This method should be implemented by subclasses to handle specific parsing logic.
         """
-        ...
+        raise NotImplementedError("This method should be implemented by subclasses.")
 
     @classmethod
     @abstractmethod
@@ -29,4 +29,4 @@ class BaseParserProvider(ABC):
         Parse a page of raw data from the provider into a TitlePagination model.
         This method should be implemented by subclasses to handle specific pagination parsing logic.
         """
-        ...
+        raise NotImplementedError("This method should be implemented by subclasses.")

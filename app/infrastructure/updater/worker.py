@@ -199,7 +199,7 @@ class FullParserWorker:
                     large_url=covers_data[2],
                 )
 
-            if self._media_manager.http_client.closed:
+            if self._media_manager.session.closed:
                 logger.warning(
                     f"HTTP session is closed, skipping title creation for {title.id}"
                 )

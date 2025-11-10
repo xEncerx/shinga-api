@@ -1,4 +1,4 @@
-from app.utils import AsyncHttpClient
+from app.infrastructure.http import AsyncHttpClient
 import json
 
 from app.core import (
@@ -74,16 +74,6 @@ class Translator(AsyncHttpClient):
             timeout=180, # 3 minutes
         )
 
-    async def __aenter__(self) -> "Translator":
-        """
-        Async context manager entry.
-        
-        Returns:
-            Translator: Self instance for use in async with statements.
-        """
-        await super().__aenter__()
-        return self
-
     async def translate(
         self,
         text: dict[str, str],
@@ -130,7 +120,7 @@ class Translator(AsyncHttpClient):
             raise ValueError("OpenAI API key is required for OpenAI translation.")
         
         try:
-            response = await self.post(
+            async with self.post(
                 url="chat/completions",
                 proxy=proxy,
                 headers={
@@ -148,12 +138,14 @@ class Translator(AsyncHttpClient):
                     ],
                     "temperature": temperature,
                 }
-            )
-            if not response:
+            ) as response:
+                data = await response.json()
+                
+            if not data:
                 logger.error("Empty response from OpenAI API.")
                 return None
 
-            return json.loads(response["choices"][0]["message"]["content"])
+            return json.loads(data["choices"][0]["message"]["content"])
         except json.JSONDecodeError:
             logger.error("Failed to decode JSON response from OpenAI API.")
         except Exception as e:

@@ -13,10 +13,6 @@ class MalProvider(BaseProvider):
         """Initialize the MAL provider with the base URL."""
         super().__init__(base_url=base_url)
 
-    async def __aenter__(self) -> "MalProvider":
-        """Async context manager entry."""
-        return self
-
     async def get_by_id(self, id: int | str, proxy: str | None = None) -> Title | None:
         """
         Fetch title data by ID from MyAnimeList.
@@ -32,14 +28,17 @@ class MalProvider(BaseProvider):
             ClientResponseError: If the request fails with a client error.
         """
         try:
-            data = await self.get(url=f"manga/{id}", proxy=proxy)
+            async with self.get(f"manga/{id}", proxy=proxy) as response:
+                response.raise_for_status()
+
+                data = await response.json()
 
             if not data:
                 return
 
             return MalParser.parse(data["data"])
         except ClientResponseError:
-            raise # re-raise to handle it in the worker
+            raise  # re-raise to handle it in the worker
         except Exception as e:
             logger.error(f"Error fetching data from MAL for ID {id}: {e}")
             return
@@ -65,10 +64,13 @@ class MalProvider(BaseProvider):
             raise ValueError("Page must be >= 1 and limit must be between 1 and 25.")
 
         try:
-            data = await self.get(
-                url=f"manga?page={page}&limit={limit}",
+            async with self.get(
+                f"manga?page={page}&limit={limit}",
                 proxy=proxy,
-            )
+            ) as response:
+                response.raise_for_status()
+
+                data = await response.json()
 
             if not data or "data" not in data:
                 return TitlePagination()

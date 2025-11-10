@@ -10,8 +10,8 @@ import hashlib
 # import base64
 import io
 
+from app.infrastructure.http import AsyncHttpClient
 from app.core import settings, logger
-from app.utils import AsyncHttpClient
 
 
 class MediaManger(AsyncHttpClient):
@@ -60,7 +60,7 @@ class MediaManger(AsyncHttpClient):
         Generating a file name using a template: provider_id_size.webp
 
         Args:
-            provider (str): Provider name (mal, shiki, etc)
+            provider (str): Provider name (mal, shikimori, etc)
             content_id (str): Provider's content ID
             size (str): Size: "" (original), "s" (small), "l" (large)
 
@@ -88,11 +88,10 @@ class MediaManger(AsyncHttpClient):
         :return: Image data as bytes, or None if download failed
         """
         try:
-            return await self.get(
-                url=url,
-                response_type="bytes",
-                proxy=proxy,
-            )
+            async with self.get(url, proxy=proxy) as response:
+                response.raise_for_status()
+
+                return await response.read()
         except Exception as e:
             logger.error(f"Error downloading image from {url}: {e}")
 
@@ -160,7 +159,7 @@ class MediaManger(AsyncHttpClient):
 
         Args:
             image_url (str | None): URL of the source image
-            provider (str): Provider name (e.g., "mal", "shiki")
+            provider (str): Provider name (e.g., "mal", "shikimori")
             content_id (str): Unique content identifier
             force_redownload (bool): Whether to overwrite existing files
             proxy (str | None): Optional proxy URL for HTTP requests

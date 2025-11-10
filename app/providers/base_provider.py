@@ -1,10 +1,11 @@
 from aiohttp.client_exceptions import ClientResponseError
 from aiohttp import ClientTimeout
+
 from abc import ABC, abstractmethod
 
+from app.infrastructure.http import AsyncHttpClient
 from app.infrastructure.db.models import Title
 from app.domain.models import TitlePagination
-from app.utils import AsyncHttpClient
 
 
 class BaseProvider(ABC, AsyncHttpClient):

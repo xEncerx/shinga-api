@@ -13,10 +13,6 @@ class RemangaProvider(BaseProvider):
         """Initialize the Remanga provider with the base URL."""
         super().__init__(base_url=base_url)
 
-    async def __aenter__(self) -> "RemangaProvider":
-        """Async context manager entry."""
-        return self
-
     async def get_by_id(self, id: int | str, proxy: str | None = None) -> Title | None:
         """
         Fetch title data by slug from Remanga.
@@ -32,7 +28,10 @@ class RemangaProvider(BaseProvider):
             ClientResponseError: If the request fails with a client error.
         """
         try:
-            data = await self.get(url=f"v2/titles/{id}/", proxy=proxy)
+            async with self.get(f"v2/titles/{id}/", proxy=proxy) as response:
+                response.raise_for_status()
+
+                data = await response.json()
 
             if not data:
                 return
@@ -66,10 +65,10 @@ class RemangaProvider(BaseProvider):
             raise ValueError("Page must be >= 1 and limit must be between 1 and 30.")
 
         try:
-            data = await self.get(
-                url=f"v2/search/catalog/?page={page}&count={limit}&ordering={ordering}",
-                proxy=proxy,
-            )
+            async with self.get(f"v2/search/catalog/?page={page}&count={limit}&ordering={ordering}", proxy=proxy) as response:
+                response.raise_for_status()
+
+                data = await response.json()
 
             if not data or not data["results"]:
                 return TitlePagination()
