@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum, auto
 from tqdm import tqdm
 import asyncio
@@ -76,7 +77,12 @@ class FullParserWorker:
             match provider:
                 case SourceProvider.REMANGA:
                     # Remanga is sensitive to proxies. But since it has no rate limits, we can do without them.
-                    page_data = await self._remanga_client.get_page(page)
+                    
+                    # Use different ordering to get more diverse titles.
+                    # Because Remanga has a limit of 1000 pages, we need to change the ordering to parse as much data as possible.
+                    ordering = "-id" if datetime.now().day % 2 == 0 else "id"
+
+                    page_data = await self._remanga_client.get_page(page, ordering=ordering)
                 case SourceProvider.MAL:
                     page_data = await self._mal_client.get_page(page=page, proxy=proxy)
                 case _:

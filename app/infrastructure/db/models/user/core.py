@@ -48,7 +48,7 @@ class User(SQLModel, table=True):
 class UserTitles(SQLModel, table=True):
     __tablename__ = "user_titles"  # type: ignore
 
-    username: str = Field(foreign_key="users.username", index=True, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True, primary_key=True)
     title_id: str = Field(foreign_key="titles.id", index=True, primary_key=True)
 
     user_rating: int = Field(ge=0, le=10)

@@ -47,7 +47,7 @@ class UserPublic(BaseModel):
 
 
 class UserTitlePublic(BaseModel):
-    username: str
+    user_id: int
     title_id: str
 
     user_rating: int = Field(default=0, ge=0, le=10)
