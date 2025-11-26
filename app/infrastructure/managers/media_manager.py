@@ -1,8 +1,8 @@
+from PIL import Image, ImageOps
 from fastapi import UploadFile
 from typing import Literal
 from pathlib import Path
 from uuid import uuid4
-from PIL import Image
 import aiofiles
 import asyncio
 import hashlib
@@ -42,13 +42,17 @@ class MediaManger(AsyncHttpClient):
         self.covers_path = self.storage_path / "covers"
         self.avatars_path = self.storage_path / "avatars"
 
-        self.SIZE_MAP = {"": (225, 319), "s": (112, 160), "l": (423, 600)}
+        self.SIZE_MAP = {
+            "": (300, 450),
+            "s": (150, 225),
+            "l": (600, 900),
+        }
 
-        super().__init__(proxy=proxy, timeout=timeout)
-
-    async def __aenter__(self) -> "MediaManger":
-        await super().__aenter__()
-        return self
+        super().__init__(
+            proxy=proxy,
+            timeout=timeout,
+            disable_ssl=True,
+        )
 
     def generate_filename(
         self,
@@ -121,7 +125,7 @@ class MediaManger(AsyncHttpClient):
                 img = img.convert("RGB")
 
             if target_size:
-                img.thumbnail(target_size, Image.Resampling.LANCZOS)
+                img = ImageOps.contain(img, target_size, Image.Resampling.LANCZOS)
 
             img.save(
                 output_buffer,
@@ -131,7 +135,7 @@ class MediaManger(AsyncHttpClient):
             )
 
             return output_buffer.getvalue()
-        
+
     def delete_file(self, file_path: str) -> None:
         """
         Delete a file from the storage (if it exists).
@@ -169,13 +173,19 @@ class MediaManger(AsyncHttpClient):
         if not image_url:
             return [settings.COVER_404_PATH] * 3
 
-        # Empty image in MAL
-        if image_url.endswith("apple-touch-icon-256.png"):
-            return [settings.COVER_404_PATH] * 3
+        for postfix in settings.MISSING_COVER_PATTERNS:
+            if image_url.endswith(postfix):
+                return [settings.COVER_404_PATH] * 3
 
-        filename = self.generate_filename(provider, content_id, "l")
-        filepath = self.covers_path / filename
-        if filepath.exists() and not force_redownload:
+        all_exist = all(
+            (
+                self.covers_path
+                / self.generate_filename(provider, content_id, size_name)  # type: ignore
+            ).exists()
+            for size_name in self.SIZE_MAP.keys()
+        )
+
+        if all_exist and not force_redownload:
             return [
                 f"{settings.COVER_PUBLIC_PATH}/{self.generate_filename(provider, content_id, size_name)}"  # type: ignore
                 for size_name in self.SIZE_MAP.keys()
