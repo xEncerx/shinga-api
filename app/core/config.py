@@ -1,12 +1,13 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_core import MultiHostUrl
-from datetime import timedelta
 from pathlib import Path
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     API_URL: str = "http://localhost:8000"
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
 
     # Project settings
     PROJECT_NAME: str = "Shinga Api"
-    VERSION: str = "0.2.0"
+    VERSION: str = "0.3.0"
 
     # JWT settings
     SECRET_KEY: str
@@ -52,6 +53,9 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str
     SMTP_PASSWORD: str
 
+    # Sentry DSN
+    SENTRY_DSN: str | None = None
+
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> MultiHostUrl:
         return MultiHostUrl.build(
@@ -70,7 +74,11 @@ class Settings(BaseSettings):
     COVER_PUBLIC_PATH: str = "/media/covers"
     AVATAR_PUBLIC_PATH: str = "/media/avatars"
     COVER_404_PATH: str = "/media/covers/404.webp"
+    COVER_PENDING_PATH: str = "/media/covers/pending.webp"
     DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"
+
+    # Параметр для окончаний обложек, которые пустые(404)
+    MISSING_COVER_PATTERNS: list[str] = ["apple-touch-icon-256.png"]
 
     MAX_AVATAR_SIZE: int = 2 * 1024 * 1024  # 2 MB
     ALLOWED_AVATAR_EXTENSIONS: set[str] = {"jpg", "jpeg", "png", "webp"}
@@ -82,9 +90,6 @@ class Settings(BaseSettings):
     # Proxy settings
     PROXY_FETCH_INTERVAL: int = 3600  # 1 hour
     PROXY_VALIDATION_INTERVAL: int = 1800  # 30 minutes
-
-    # Global Title Parser settings
-    GTP_UPDATE_INTERVAL: timedelta = timedelta(days=3)
 
     # PATH
     TEMP_PATH: Path = Path(__file__).parent.parent.parent / "temp"
