@@ -108,7 +108,7 @@ class ExternalIdMatcher(BaseMatcher):
             return candidates
 
         except Exception as e:
-            logger.error(f"ExternalIdMatcher error searching by mal_id: {e}")
+            logger.error(f"ExternalIdMatcher error searching by mal_id: {e}", exc_info=True)
             return []
 
     def get_strategy_name(self) -> MatchingStrategy:

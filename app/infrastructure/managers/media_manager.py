@@ -97,7 +97,7 @@ class MediaManger(AsyncHttpClient):
 
                 return await response.read()
         except Exception as e:
-            logger.error(f"Error downloading image from {url}: {e}")
+            logger.error(f"Error downloading image from {url}: {e}", exc_info=True)
 
     def _process_image(
         self,
@@ -148,7 +148,7 @@ class MediaManger(AsyncHttpClient):
             try:
                 path.unlink()
             except Exception as e:
-                logger.error(f"Failed to delete file {file_path}: {e}")
+                logger.error(f"Failed to delete file {file_path}: {e}", exc_info=True)
 
     async def save_cover(
         self,
@@ -212,7 +212,7 @@ class MediaManger(AsyncHttpClient):
 
                 result.append(f"{settings.COVER_PUBLIC_PATH}/{filename}")
             except Exception as e:
-                logger.error(f"Failed to process cover size {size}: {str(e)}")
+                logger.error(f"Failed to process cover size {size}: {str(e)}", exc_info=True)
                 if filepath.exists():
                     filepath.unlink()
                 result.append(settings.COVER_404_PATH)

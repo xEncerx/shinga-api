@@ -181,7 +181,7 @@ class ConsolidationService:
 
             except Exception as e:
                 stats["errors"] += 1
-                logger.error(f"Error consolidating title: {e}")
+                logger.error(f"Error consolidating title: {e}", exc_info=True)
 
                 await self.session.rollback()
 

@@ -40,5 +40,5 @@ class PageQueueBuilder:
             return page_queue, scraping_config
 
         except Exception as e:
-            logger.error(f"Error building queue for {source_provider.value}: {e}")
+            logger.error(f"Error building queue for {source_provider.value}: {e}", exc_info=True)
             return [], {}

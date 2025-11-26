@@ -49,5 +49,5 @@ async def signup(
     except UserAlreadyExistsError as e:
         raise UserAlreadyExists(detail=e.message)
     except Exception as e:
-        logger.error(f"Failed to create user: {e}")
+        logger.error(f"Failed to create user: {e}", exc_info=True)
         raise UserRelatedError(status_code=500)

@@ -50,7 +50,7 @@ async def exchange_token(access_token: str = Query(...), *, request: Request):
         except UserAlreadyExistsError as e:
             raise UserAlreadyExists(detail=e.message)
         except Exception as e:
-            logger.error(f"Failed to create user: {e}")
+            logger.error(f"Failed to create user: {e}", exc_info=True)
             raise OAuthError(detail="Failed to create user from Yandex profile.")
 
     return Token(access_token=create_access_token(subject=user.id))  # type: ignore

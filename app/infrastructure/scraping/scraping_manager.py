@@ -88,8 +88,8 @@ class ScrapingManager:
             except Exception as e:
                 await self.session.rollback()
                 logger.error(
-                    f"Error saving title {title_data.source_id} "
-                    f"from {self.source_provider.value}: {e}"
+                    f"Error saving title {title_data.source_id} from {self.source_provider.value}: {e}",
+                    exc_info=True,
                 )
                 continue
 

@@ -17,7 +17,7 @@ class CreateOperations:
                 await session.refresh(title)
                 return True
             except Exception as e:
-                logger.error(f"Failed to upsert title: {e}")
+                logger.error(f"Failed to upsert title: {e}", exc_info=True)
                 return False
 
     @staticmethod
@@ -31,5 +31,5 @@ class CreateOperations:
                 await session.commit()
                 return True
             except Exception as e:
-                logger.error(f"Failed to create titles: {e}")
+                logger.error(f"Failed to create titles: {e}", exc_info=True)
                 return False

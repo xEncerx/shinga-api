@@ -105,6 +105,6 @@ class JSONBWithModel(TypeDecorator):
 
         except Exception as e:
             logger.error(
-                f"Failed to deserialize {self.model_class.__name__} from {value}: {e}"
+                f"Failed to deserialize {self.model_class.__name__} from {value}: {e}", exc_info=True
             )
             return value

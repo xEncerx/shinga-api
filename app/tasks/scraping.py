@@ -85,7 +85,8 @@ def scrape_all_sources(self) -> dict:
                             )
                 except Exception as e:
                     logger.error(
-                        f"Failed to build queue for {source_provider.value}: {e}"
+                        f"Failed to build queue for {source_provider.value}: {e}",
+                        exc_info=True,
                     )
                     continue
 

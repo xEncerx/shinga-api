@@ -114,7 +114,7 @@ class ReadOperations:
                         "user_data": title[1].model_dump() if title[1] else None,
                     }
             except Exception as e:
-                logger.error(f"Failed to fetch title with user data: {e}")
+                logger.error(f"Failed to fetch title with user data: {e}", exc_info=True)
 
     @staticmethod
     async def search(
@@ -286,7 +286,7 @@ class ReadOperations:
                     "content": content,
                 }
             except Exception as e:
-                logger.error(f"TitleCRUD.search failed: {e}")
+                logger.error(f"TitleCRUD.search failed: {e}", exc_info=True)
                 return {
                     "pagination": Pagination(),
                     "content": [],
@@ -387,5 +387,5 @@ class ReadOperations:
                 return {"content": content}
 
             except Exception as e:
-                logger.error(f"TitleCRUD.recommendations failed: {e}")
+                logger.error(f"TitleCRUD.recommendations failed: {e}", exc_info=True)
                 return {"content": []}

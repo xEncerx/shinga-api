@@ -56,7 +56,7 @@ class EmailService:
             return await cls.send_email(msg, recipient_email)
 
         except Exception as e:
-            logger.error(f"Cant send reset password email: {e}")
+            logger.error(f"Cant send reset password email: {e}", exc_info=True)
             return False
 
     @classmethod

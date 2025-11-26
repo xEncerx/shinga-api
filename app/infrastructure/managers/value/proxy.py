@@ -75,7 +75,7 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
             proxies = list(set(proxies))
 
         except Exception as e:
-            logger.error(f"Error fetching proxies: {e}")
+            logger.error(f"Error fetching proxies: {e}", exc_info=True)
 
         return proxies
 

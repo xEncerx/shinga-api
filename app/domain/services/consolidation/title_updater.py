@@ -99,5 +99,5 @@ class TitleUpdateService:
 
         except Exception as e:
             await self.session.rollback()
-            logger.error(f"Error updating title {master_title_id}: {e}")
+            logger.error(f"Error updating title {master_title_id}: {e}", exc_info=True)
             return False

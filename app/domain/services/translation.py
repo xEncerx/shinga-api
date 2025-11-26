@@ -146,6 +146,8 @@ class Translator(AsyncHttpClient):
 
             return json.loads(data["choices"][0]["message"]["content"])
         except json.JSONDecodeError:
-            logger.error("Failed to decode JSON response from OpenAI API.")
+            logger.error(
+                "Failed to decode JSON response from OpenAI API.", exc_info=True
+            )
         except Exception as e:
-            logger.error(f"Error during translation: {e}")
+            logger.error(f"Error during translation: {e}", exc_info=True)

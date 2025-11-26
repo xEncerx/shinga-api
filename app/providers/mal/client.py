@@ -94,5 +94,5 @@ class MalProvider(BaseProvider):
             return total_pages
 
         except Exception as e:
-            logger.error(f"MAL: Error getting total pages: {e}, defaulting to 100")
+            logger.error(f"MAL: Error getting total pages: {e}, defaulting to 100", exc_info=True)
             return 100  # Fallback on error

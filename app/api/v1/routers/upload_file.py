@@ -55,5 +55,5 @@ async def upload_avatar(
             }
         )
     except Exception as e:
-        logger.error(f"Failed to save avatar: {str(e)}")
+        logger.error(f"Failed to save avatar: {str(e)}", exc_info=True)
         raise FileRelatedError(detail="Failed to save avatar. Try again later.")
