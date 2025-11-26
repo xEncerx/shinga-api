@@ -42,8 +42,8 @@ class BaseScrapingTask(Task):
 
 # === PROVIDER MAPPING ===
 PROVIDER_MAP: dict[SourceProvider, type[BaseProvider]] = {
-    # SourceProvider.MAL: MalProvider,
-    # SourceProvider.SHIKIMORI: ShikimoriProvider,
+    SourceProvider.MAL: MalProvider,
+    SourceProvider.SHIKIMORI: ShikimoriProvider,
     SourceProvider.REMANGA: RemangaProvider,
 }
 
