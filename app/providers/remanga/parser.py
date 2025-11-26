@@ -3,11 +3,14 @@ from ..base_parser import *
 
 class RemangaParser(BaseParserProvider):
     @staticmethod
-    def parse(data: dict[str, Any]) -> Title:
+    def parse(data: dict[str, Any]) -> TitleData:
         cover = data["cover"]
 
-        return Title(
-            cover=TitleCover(
+        return TitleData(
+            source_id=data["dir"],
+            source_provider=SourceProvider.REMANGA,
+            source_url="https://remanga.org/manga/" + data["dir"],
+            cover=TitleCoverData(
                 url="https://remanga.org" + cover["mid"] if "mid" in cover else None,
                 small_url=(
                     "https://remanga.org" + cover["low"] if "low" in cover else None
@@ -27,7 +30,7 @@ class RemangaParser(BaseParserProvider):
             chapters=data.get("count_chapters") or 0,
             views=data.get("total_views") or 0,
             status=StatusConverter.from_remanga(data["status"]["name"]),
-            date=TitleReleaseTime(
+            date=TitleReleaseDateData(
                 from_=(
                     f"{date}-01-01T00:00:00+00:00"
                     if (date := data["issue_year"])
@@ -37,7 +40,7 @@ class RemangaParser(BaseParserProvider):
             rating=float(data["avg_rating"] or 0),
             scored_by=data.get("count_rating") or 0,
             favorites=data.get("count_bookmarks") or 0,
-            description=TitleDescription(
+            description=TitleDescriptionData(
                 en=None,
                 ru=tag_remover(desc) if (desc := data.get("description")) else None,
             ),
@@ -46,12 +49,24 @@ class RemangaParser(BaseParserProvider):
                 for genre in data["genres"]
                 if genre and (x := TitleGenre.get(ru=genre["name"]))
             ],
-            source_provider=SourceProvider.REMANGA,
-            source_id=data["dir"],
         )
 
     @classmethod
-    def parse_page(cls, data: dict[str, Any]) -> TitlePagination:
-        return TitlePagination(
-            data=[cls.parse(item) for item in data["results"]],
-        )
+    def parse_page(cls, data: dict[str, Any]) -> TitlePagination[TitleData]:
+        parsed_titles = []
+        for item in data["results"]:
+            try:
+                parsed_titles.append(cls.parse(item))
+            except (ValueError, KeyError) as e:
+                logger.warning(
+                    f"Skipping Remanga title slug={item.get('dir', 'unknown')}: {e}"
+                )
+                continue
+            except Exception as e:
+                logger.error(
+                    f"Unexpected error parsing Remanga title slug={item.get('dir', 'unknown')}: {e}",
+                    exc_info=True,
+                )
+                continue
+
+        return TitlePagination[TitleData](data=parsed_titles)

@@ -13,7 +13,10 @@ class MalProvider(BaseProvider):
         """Initialize the MAL provider with the base URL."""
         super().__init__(base_url=base_url)
 
-    async def get_by_id(self, id: int | str, proxy: str | None = None) -> Title | None:
+    @handle_provider_errors("MAL")
+    async def get_by_id(
+        self, id: int | str, proxy: str | None = None
+    ) -> TitleData | None:
         """
         Fetch title data by ID from MyAnimeList.
 
@@ -22,33 +25,25 @@ class MalProvider(BaseProvider):
             proxy (str | None): Optional proxy URL for the request.
 
         Returns:
-            Title | None: Parsed title data if successful or None if no data is found or an error occurs.
-
-        Raises:
-            ClientResponseError: If the request fails with a client error.
+            TitleData | None: Parsed title data if successful or None if no data is found or an error occurs.
         """
-        try:
-            async with self.get(f"manga/{id}", proxy=proxy) as response:
-                response.raise_for_status()
+        async with self.get(f"manga/{id}", proxy=proxy) as response:
+            response.raise_for_status()
+            data = await response.json()
 
-                data = await response.json()
+        if not data:
+            raise ProviderDataError(f"MAL returned empty data for ID {id}")
 
-            if not data:
-                return
+        return MalParser.parse(data["data"])
 
-            return MalParser.parse(data["data"])
-        except ClientResponseError:
-            raise  # re-raise to handle it in the worker
-        except Exception as e:
-            logger.error(f"Error fetching data from MAL for ID {id}: {e}")
-            return
-
+    @handle_provider_errors("MAL")
     async def get_page(
         self,
         page: int,
         limit: int = 25,
         proxy: str | None = None,
-    ) -> TitlePagination:
+        **unused,
+    ) -> TitlePagination[TitleData]:
         """
         Fetch a page of titles from MyAnimeList.
 
@@ -56,26 +51,48 @@ class MalProvider(BaseProvider):
             page (int): The page number to fetch.
             limit (int): The number of titles per page (default is 25/25 of max pages).
             proxy (str | None): Optional proxy URL for the request.
+            **unused: Additional provider-specific parameters.
 
         Returns:
-            TitlePagination: A pagination object containing the list of titles and pagination info.
+            TitlePagination[TitleData]: A pagination object containing the list of titles and pagination info.
         """
         if page < 1 or not (1 <= limit <= 25):
             raise ValueError("Page must be >= 1 and limit must be between 1 and 25.")
 
+        async with self.get(
+            f"manga?page={page}&limit={limit}",
+            proxy=proxy,
+        ) as response:
+            response.raise_for_status()
+            data = await response.json()
+
+        if not data or "data" not in data:
+            raise ProviderDataError(f"MAL returned empty/invalid data for page {page}")
+
+        return MalParser.parse_page(data)
+
+    async def get_total_pages(self, limit: int = 25, proxy: str | None = None) -> int:
+        """
+        Get total number of pages from MAL.
+
+        Strategy: Fetch page 1 and check pagination.last_visible_page
+        """
         try:
-            async with self.get(
-                f"manga?page={page}&limit={limit}",
-                proxy=proxy,
-            ) as response:
-                response.raise_for_status()
+            # Fetch first page to get pagination info
+            pagination = await self.get_page(page=1, limit=limit, proxy=proxy)
 
-                data = await response.json()
+            if not pagination or not pagination.pagination:
+                logger.warning(
+                    "MAL: Could not get pagination info, defaulting to 100 pages"
+                )
+                return 100  # Fallback default
 
-            if not data or "data" not in data:
-                return TitlePagination()
+            # MAL returns last_visible_page in pagination
+            total_pages = pagination.pagination.last_visible_page or 100
 
-            return MalParser.parse_page(data)
+            logger.info(f"MAL: Total available pages: {total_pages}")
+            return total_pages
+
         except Exception as e:
-            logger.error(f"Error fetching page from MAL: {e}")
-            return TitlePagination()
+            logger.error(f"MAL: Error getting total pages: {e}, defaulting to 100")
+            return 100  # Fallback on error
