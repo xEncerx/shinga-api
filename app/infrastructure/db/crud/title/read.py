@@ -2,9 +2,11 @@ from fastapi_cache.coder import PickleCoder
 from fastapi_cache.decorator import cache
 
 from sqlmodel import select, and_, desc, asc, func, or_, case
-from datetime import datetime, timedelta
+from sqlmodel.ext.asyncio.session import AsyncSession
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from app.domain.enums import *
 from app.domain.models import *
 from ...session import get_session
 from ...models import *
@@ -30,36 +32,43 @@ class ReadOperations:
                 return None
 
     @staticmethod
-    async def by_source(
-        source_provider: SourceProvider,
-        source_id: str,
-    ) -> Title | None:
-        """Fetch a title by its source provider and source ID."""
-        async with get_session() as session:
-            try:
-                result = await session.exec(
-                    select(Title).where(
-                        Title.source_provider == source_provider,
-                        Title.source_id == source_id,
-                    )
-                )
-                return result.first()
-            except:
-                return None
+    async def claim_for_update(
+        session: AsyncSession,
+        hours: int = 54,
+        fetch_size: int = 100,
+        last_id: int = 0,
+    ) -> list[int]:
+        """
+        Claim a batch of titles for update based on source data changes.
 
-    @staticmethod
-    async def for_update(time_ago: timedelta) -> list[int]:
-        """Fetch all titles that need to be updated."""
-        async with get_session() as session:
-            try:
-                now_time = datetime.now()
-                result = await session.exec(
-                    select(Title.id).where(Title.updated_at < now_time - time_ago),
-                )
-                return [i for i in result.all() if i is not None]
-            except Exception as e:
-                logger.error(f"Failed to fetch updatable titles: {e}")
-                return []
+        Args:
+            session (AsyncSession): Async SQLModel session.
+            hours (int): Time window in hours for checking source updates. Defaults to 54.
+            fetch_size (int): Maximum number of records. Defaults to 100.
+            last_id (int): Cursor - ID of the last element from the previous batch. Defaults to 0.
+
+        Returns:
+            list[int]: List of title IDs.
+        """
+
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+
+        query = (
+            select(Title.id)
+            .join(TitleSourceData, TitleSourceData.master_title_id == Title.id)  # type: ignore
+            .where(
+                TitleSourceData.last_verified_at >= cutoff_time,
+                TitleSourceData.is_deleted_from_source.is_(False),  # type: ignore
+                Title.updated_at < TitleSourceData.last_verified_at,
+                Title.id > last_id,  # type: ignore
+            )
+            .distinct()
+            .limit(fetch_size)
+        )
+
+        result = await session.exec(query)
+
+        return [i for i in result.all() if i is not None]
 
     @staticmethod
     async def with_user_data(
