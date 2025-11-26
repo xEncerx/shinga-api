@@ -3,6 +3,7 @@ import sys
 
 import logging
 
+
 class InterceptHandler(logging.Handler):
     def emit(self, record):
         try:
@@ -11,22 +12,31 @@ class InterceptHandler(logging.Handler):
             level = record.levelno
 
         frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__: # type: ignore
-            frame = frame.f_back # type: ignore
+        while frame.f_code.co_filename == logging.__file__:  # type: ignore
+            frame = frame.f_back  # type: ignore
             depth += 1
 
         logger.opt(depth=depth, exception=record.exc_info).log(
             level, record.getMessage()
         )
 
-def setup_fastapi_logging() -> None:
+
+def configure_standard_logging() -> None:
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-    
+
     uvicorn_loggers = ["uvicorn", "uvicorn.error", "uvicorn.access"]
     for log_name in uvicorn_loggers:
         logging_logger = logging.getLogger(log_name)
         logging_logger.handlers = [InterceptHandler()]
         logging_logger.propagate = False
+
+    celery_loggers = ["celery", "celery.worker", "celery.task", "celery.app"]
+    for log_name in celery_loggers:
+        logging_logger = logging.getLogger(log_name)
+        logging_logger.handlers = []
+        logging_logger.setLevel(logging.ERROR)
+        logging_logger.propagate = False
+
 
 def setup_logging(file_name: str = "") -> None:
     """
@@ -38,7 +48,7 @@ def setup_logging(file_name: str = "") -> None:
     logger.remove()
 
     logger.add(
-        sys.stderr,
+        sys.stdout,
         level="INFO",
         format="<green>{time:DD:MM:YYYY HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         colorize=True,
@@ -46,11 +56,12 @@ def setup_logging(file_name: str = "") -> None:
 
     logger.add(
         f"logs/{file_name}.log",
-        rotation="10 MB",
+        rotation="50 MB",
         retention="30 days",
-        compression="zip",
+        compression=None,
         level="INFO",
         format="{time:DD:MM:YYYY HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+        delay=True,
     )
 
-    setup_fastapi_logging()
+    configure_standard_logging()
