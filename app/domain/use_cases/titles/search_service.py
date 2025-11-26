@@ -1,7 +1,7 @@
+from app.domain.enums import TitleGenre
 from app.infrastructure.db import (
     TitleCRUD,
     TitleSearchMode,
-    TitleGenre,
 )
 from app.api.v1.schemas import (
     TitlePaginationResponse,
