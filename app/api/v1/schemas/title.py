@@ -3,8 +3,9 @@ from datetime import datetime
 from typing import Any
 
 from app.infrastructure.db.models import *
-from app.domain.models import *
 from .user import UserTitlePublic
+from app.domain.models import *
+from app.domain.enums import *
 
 
 class TitlePublic(BaseModel):

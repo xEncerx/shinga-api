@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from app.infrastructure.db.models import *
+from app.domain.enums import *
 
 class GenresForm(BaseModel):
     genres: list[Genre] = Field(default=[])

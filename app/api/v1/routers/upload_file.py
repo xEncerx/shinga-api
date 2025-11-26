@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, UploadFile, File
 from fastapi.responses import JSONResponse
 from typing import Annotated
 
-from app.infrastructure.storage import MediaManger
+from app.infrastructure.managers import MediaManger
 from app.core import limiter, settings, logger
 from app.infrastructure.db.crud import *
 from app.api.deps import CurrentUserDep
