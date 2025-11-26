@@ -1,1 +1,0 @@
-from .global_titles_updater import GlobalTitlesUpdater
