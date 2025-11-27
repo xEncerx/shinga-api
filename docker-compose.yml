@@ -16,7 +16,7 @@ services:
   api:
     build: .
     container_name: shinga-api
-    command: gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+    command: gunicorn main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
     env_file:
       - .env
     environment:
@@ -53,13 +53,13 @@ services:
       - shinga-network
     restart: unless-stopped
 
-  celery-worker-scraping:
+  celery-worker-main:
     build: .
-    container_name: shinga-celery-scraping
+    container_name: shinga-celery-main
     command: >
       celery -A app.tasks.celery_app worker
-      -Q scraping
-      -n scraping@%h
+      -Q scraping,consolidation,refresh_titles
+      -n main@%h
       --concurrency=4
       --autoscale=6,2
     env_file:
@@ -67,54 +67,8 @@ services:
     environment:
       - REDIS_HOST=redis
       - POSTGRES_HOST=${POSTGRES_HOST}
-    volumes:
-      - ./logs:/app/logs
-      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
-      - ./temp:/app/temp
-    depends_on:
-      - redis
-    networks:
-      - shinga-network
-    restart: unless-stopped
-
-  celery-worker-consolidation:
-    build: .
-    container_name: shinga-celery-consolidation
-    command: >
-      celery -A app.tasks.celery_app worker
-      -Q consolidation
-      -n consolidation@%h
-      --concurrency=6
-      --autoscale=8,2
-    env_file:
-      - .env
-    environment:
-      - REDIS_HOST=redis
-      - POSTGRES_HOST=${POSTGRES_HOST}
-    volumes:
-      - ./logs:/app/logs
-      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
-      - ./temp:/app/temp
-    depends_on:
-      - redis
-    networks:
-      - shinga-network
-    restart: unless-stopped
-
-  celery-worker-refresh:
-    build: .
-    container_name: shinga-celery-refresh
-    command: >
-      celery -A app.tasks.celery_app worker
-      -Q refresh_titles
-      -n refresh_titles@%h
-      --concurrency=6
-      --autoscale=8,2
-    env_file:
-      - .env
-    environment:
-      - REDIS_HOST=redis
-      - POSTGRES_HOST=${POSTGRES_HOST}
+      - PYTHONUNBUFFERED=1
+      - PYTHONMALLOC=malloc
     volumes:
       - ./logs:/app/logs
       - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
@@ -132,13 +86,15 @@ services:
       celery -A app.tasks.celery_app worker
       -Q download_media
       -n download_media@%h
-      --concurrency=8
-      --autoscale=12,4
+      --concurrency=4
+      --autoscale=6,2
     env_file:
       - .env
     environment:
       - REDIS_HOST=redis
       - POSTGRES_HOST=${POSTGRES_HOST}
+      - PYTHONUNBUFFERED=1
+      - PYTHONMALLOC=malloc
     volumes:
       - ./logs:/app/logs
       - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
@@ -157,7 +113,6 @@ services:
       -Q monitoring
       -n monitoring@%h
       --concurrency=1
-      --autoscale=2,1
     env_file:
       - .env
     environment:
