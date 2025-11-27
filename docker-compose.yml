@@ -1,0 +1,199 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: shinga-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: shinga-api
+    command: gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  celery-beat:
+    build: .
+    container_name: shinga-celery-beat
+    command: celery -A app.tasks.celery_app beat
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  celery-worker-scraping:
+    build: .
+    container_name: shinga-celery-scraping
+    command: >
+      celery -A app.tasks.celery_app worker
+      -Q scraping
+      -n scraping@%h
+      --concurrency=4
+      --autoscale=6,2
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  celery-worker-consolidation:
+    build: .
+    container_name: shinga-celery-consolidation
+    command: >
+      celery -A app.tasks.celery_app worker
+      -Q consolidation
+      -n consolidation@%h
+      --concurrency=6
+      --autoscale=8,2
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  celery-worker-refresh:
+    build: .
+    container_name: shinga-celery-refresh
+    command: >
+      celery -A app.tasks.celery_app worker
+      -Q refresh_titles
+      -n refresh_titles@%h
+      --concurrency=6
+      --autoscale=8,2
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  celery-worker-media:
+    build: .
+    container_name: shinga-celery-media
+    command: >
+      celery -A app.tasks.celery_app worker
+      -Q download_media
+      -n download_media@%h
+      --concurrency=8
+      --autoscale=12,4
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  celery-worker-monitoring:
+    build: .
+    container_name: shinga-celery-monitoring
+    command: >
+      celery -A app.tasks.celery_app worker
+      -Q monitoring
+      -n monitoring@%h
+      --concurrency=1
+      --autoscale=2,1
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=${POSTGRES_HOST}
+    volumes:
+      - ./logs:/app/logs
+      - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
+      - ./temp:/app/temp
+    depends_on:
+      - redis
+    networks:
+      - shinga-network
+    restart: unless-stopped
+
+  flower:
+    build: .
+    container_name: shinga-flower
+    command: celery -A app.tasks.celery_app flower --port=5555
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    ports:
+      - "5555:5555"
+    networks:
+      - shinga-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  redis_data:
+
+networks:
+  shinga-network:
+    driver: bridge
