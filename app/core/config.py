@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     COVER_PENDING_PATH: str = "/media/covers/pending.webp"
     DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"
 
-    # Параметр для окончаний обложек, которые пустые(404)
+    # URL patterns that indicate a missing cover image (404)
     MISSING_COVER_PATTERNS: list[str] = ["apple-touch-icon-256.png"]
 
     MAX_AVATAR_SIZE: int = 2 * 1024 * 1024  # 2 MB
