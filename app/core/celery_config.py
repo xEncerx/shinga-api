@@ -10,8 +10,8 @@ from app.core import settings
 # Initialize Celery application
 celery_app = Celery(
     "shinga_api",
-    broker=f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/1",
-    backend=f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/2",
+    broker=f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/1",
+    backend=f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/2",
 )
 
 
