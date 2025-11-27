@@ -131,11 +131,16 @@ services:
   flower:
     build: .
     container_name: shinga-flower
-    command: celery -A app.tasks.celery_app flower --port=5555
+    command: >
+      celery -A app.tasks.celery_app flower 
+      --port=5555
+      --basic-auth=${FLOWER_USER}:${FLOWER_PASSWORD}
     env_file:
       - .env
     environment:
       - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       - redis
     ports:
