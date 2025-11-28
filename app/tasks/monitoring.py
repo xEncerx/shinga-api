@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from sqlmodel import select, func
+from pprint import pformat
 
 from app.infrastructure.db.models.title_source_data import TitleSourceData
 from .event_loop_controller import execute_async_task
@@ -34,7 +35,6 @@ def collect_statistics() -> dict:
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "titles": {},
                     "sources": {},
-                    "mappings": {},
                 }
 
                 # === Titles statistics ===
@@ -53,6 +53,7 @@ def collect_statistics() -> dict:
                         Title.cover.isnot(None),  # type: ignore
                         Title.cover["url"].astext.isnot(None),  # type: ignore
                         Title.cover["url"].astext != settings.COVER_404_PATH,  # type: ignore
+                        Title.cover["url"].astext != settings.COVER_PENDING_PATH,  # type: ignore
                     )
                 )
                 stats["titles"]["with_cover"] = titles_with_cover.one()
@@ -91,7 +92,8 @@ def collect_statistics() -> dict:
                 return stats
 
         result = execute_async_task(run())
-        logger.info(f"Statistics collected: {result}")
+        logger.info(pformat(result))
+
         return result
 
     except Exception as e:
