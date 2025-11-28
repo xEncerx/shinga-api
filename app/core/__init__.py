@@ -16,6 +16,27 @@ redis = Redis(
 )
 
 
+# === SENTRY INTEGRATION (OPTIONAL) ===
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.loguru import LoguruIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        integrations=[
+            CeleryIntegration(),
+            LoguruIntegration(
+                level=20,
+                event_level=40,
+            ),
+        ],
+        traces_sample_rate=0.1,
+        release=getattr(settings, "VERSION", None),
+        send_default_pii=False,
+    )
+
+
 def create_media_directories():
     from pathlib import Path
 

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   redis:
     image: redis:7-alpine
@@ -69,6 +67,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - PYTHONUNBUFFERED=1
       - PYTHONMALLOC=malloc
+      - CELERY_QUEUE_NAME=main
     volumes:
       - ./logs:/app/logs
       - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
@@ -95,6 +94,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - PYTHONUNBUFFERED=1
       - PYTHONMALLOC=malloc
+      - CELERY_QUEUE_NAME=media
     volumes:
       - ./logs:/app/logs
       - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
@@ -118,6 +118,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - POSTGRES_HOST=${POSTGRES_HOST}
+      - CELERY_QUEUE_NAME=monitoring
     volumes:
       - ./logs:/app/logs
       - ${MEDIA_STORAGE_PATH:-/var/www/shinga/media}:${MEDIA_STORAGE_PATH:-/var/www/shinga/media}
