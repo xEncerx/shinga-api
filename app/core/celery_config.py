@@ -165,16 +165,3 @@ celery_app.conf.beat_schedule = {
         },
     },
 }
-
-# === SENTRY INTEGRATION (OPTIONAL) ===
-if settings.SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.celery import CeleryIntegration
-
-    sentry_sdk.init(
-        dsn=settings.SENTRY_DSN,
-        integrations=[CeleryIntegration()],
-        traces_sample_rate=0.1,
-        release=getattr(settings, "VERSION", None),
-        send_default_pii=False,
-    )

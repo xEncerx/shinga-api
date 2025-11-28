@@ -61,7 +61,7 @@ def setup_logging(file_name: str = "") -> None:
         compression=None,
         level="INFO",
         format="{time:DD:MM:YYYY HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-        delay=True,
+        enqueue=True,
     )
 
     configure_standard_logging()
