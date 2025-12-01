@@ -157,7 +157,7 @@ class DataMerger:
 
         return existing_title
 
-    async def download_covers(
+    def download_covers(
         self,
         title_id: int | None,
         cover_url: str,

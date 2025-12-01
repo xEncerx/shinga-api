@@ -133,7 +133,7 @@ class ConsolidationService:
             await self.session.commit()
 
             # Create task for downloading covers
-            await self.merger.download_covers(
+            self.merger.download_covers(
                 title_id=new_title.id,
                 cover_url=title_data.cover.url,  # type: ignore
                 source_provider=title_data.source_provider,
