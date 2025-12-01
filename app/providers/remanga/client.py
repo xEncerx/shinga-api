@@ -62,7 +62,7 @@ class RemangaProvider(BaseProvider):
         Returns:
             TitlePagination[TitleData]: A pagination object containing the list of titles and pagination info.
         """
-        if not (1 <= page < self.MAX_PAGES):
+        if not (1 <= page <= self.MAX_PAGES):
             raise ValueError(f"Page must be between 1 and {self.MAX_PAGES}.")
         if not (1 <= limit <= 30):
             raise ValueError("Limit must be between 1 and 30.")
