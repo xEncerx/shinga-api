@@ -42,6 +42,11 @@ celery_app.conf.update(
     result_backend_transport_options={
         "visibility_timeout": 3600,
     },
+    # === Broker connection ===
+    broker_connection_retry=True,
+    broker_connection_retry_on_startup=True,
+    broker_connection_max_retries=10,
+    broker_heartbeat=30,
     # === Task routing ===
     task_routes={
         "app.tasks.scraping.*": {"queue": "scraping"},
