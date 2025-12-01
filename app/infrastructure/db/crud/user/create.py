@@ -18,7 +18,7 @@ class CreateOperations:
             except IntegrityError:
                 return False
             except Exception as e:
-                logger.error(f"Failed to insert title: {e}")
+                logger.error(f"Failed to insert title: {e}", exc_info=True)
                 return False
 
     @staticmethod
@@ -30,5 +30,5 @@ class CreateOperations:
                 await session.commit()
                 return True
             except Exception as e:
-                logger.error(f"Failed to upsert user_title: {e}")
+                logger.error(f"Failed to upsert user_title: {e}", exc_info=True)
                 return False

@@ -9,6 +9,7 @@ from ...sql_types import JSONBWithModel
 from app.core import settings
 from .relations import *
 
+
 class User(SQLModel, table=True):
     __tablename__ = "users"  # type: ignore
 
@@ -32,7 +33,7 @@ class User(SQLModel, table=True):
     count_likes: int = Field(default=0)
     count_votes: int = Field(default=0)
     count_comments: int = Field(default=0)
-    count_bookmarks: BookMarksCount = Field(default=BookMarksCount(), sa_type=JSONBWithModel(BookMarksCount)) # type: ignore
+    count_bookmarks: BookMarksCount = Field(default=BookMarksCount(), sa_type=JSONBWithModel(BookMarksCount))  # type: ignore
     description: str | None = Field(default=None, max_length=1000)
 
     extra_data: dict[str, Any] | None = Field(default=None, sa_type=JSONB)
@@ -45,11 +46,12 @@ class User(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
     )
 
+
 class UserTitles(SQLModel, table=True):
     __tablename__ = "user_titles"  # type: ignore
 
     user_id: int = Field(foreign_key="users.id", index=True, primary_key=True)
-    title_id: str = Field(foreign_key="titles.id", index=True, primary_key=True)
+    title_id: int = Field(foreign_key="titles.id", index=True, primary_key=True)
 
     user_rating: int = Field(ge=0, le=10)
     current_url: str | None

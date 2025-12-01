@@ -2,9 +2,11 @@ from fastapi_cache.coder import PickleCoder
 from fastapi_cache.decorator import cache
 
 from sqlmodel import select, and_, desc, asc, func, or_, case
-from datetime import datetime, timedelta
+from sqlmodel.ext.asyncio.session import AsyncSession
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from app.domain.enums import *
 from app.domain.models import *
 from ...session import get_session
 from ...models import *
@@ -20,7 +22,7 @@ class TitleSearchMode(str, Enum):
 class ReadOperations:
     @staticmethod
     @cache(expire=30 * 60, coder=PickleCoder)
-    async def by_id(id: str) -> Title | None:
+    async def by_id(id: int) -> Title | None:
         """Fetch a title by its ID."""
         async with get_session() as session:
             try:
@@ -30,29 +32,54 @@ class ReadOperations:
                 return None
 
     @staticmethod
-    async def for_update(time_ago: timedelta) -> list[str]:
-        """Fetch all titles that need to be updated."""
-        async with get_session() as session:
-            try:
-                now_time = datetime.now()
-                result = await session.exec(
-                    select(Title.id).where(Title.updated_at < now_time - time_ago),
-                )
-                return [i for i in result.all() if i is not None]
-            except Exception as e:
-                logger.error(f"Failed to fetch updatable titles: {e}")
-                return []
+    async def claim_for_update(
+        session: AsyncSession,
+        hours: int = 54,
+        fetch_size: int = 100,
+        last_id: int = 0,
+    ) -> list[int]:
+        """
+        Claim a batch of titles for update based on source data changes.
+
+        Args:
+            session (AsyncSession): Async SQLModel session.
+            hours (int): Time window in hours for checking source updates. Defaults to 54.
+            fetch_size (int): Maximum number of records. Defaults to 100.
+            last_id (int): Cursor - ID of the last element from the previous batch. Defaults to 0.
+
+        Returns:
+            list[int]: List of title IDs.
+        """
+
+        cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+
+        query = (
+            select(Title.id)
+            .join(TitleSourceData, TitleSourceData.master_title_id == Title.id)  # type: ignore
+            .where(
+                TitleSourceData.last_verified_at >= cutoff_time,
+                TitleSourceData.is_deleted_from_source.is_(False),  # type: ignore
+                Title.updated_at < TitleSourceData.last_verified_at,
+                Title.id > last_id,  # type: ignore
+            )
+            .distinct()
+            .limit(fetch_size)
+        )
+
+        result = await session.exec(query)
+
+        return [i for i in result.all() if i is not None]
 
     @staticmethod
     async def with_user_data(
-        title_id: str,
+        title_id: int,
         user_id: int | None,
     ) -> dict[str, Any] | None:
         """
         Fetch title and user-specific data.
 
         Args:
-            title_id (str): The ID of the title to fetch.
+            title_id (int): The ID of the title to fetch.
             user_id (int | None): The user ID for user-specific data.
 
         Returns:
@@ -87,7 +114,7 @@ class ReadOperations:
                         "user_data": title[1].model_dump() if title[1] else None,
                     }
             except Exception as e:
-                logger.error(f"Failed to fetch title with user data: {e}")
+                logger.error(f"Failed to fetch title with user data: {e}", exc_info=True)
 
     @staticmethod
     async def search(
@@ -259,7 +286,7 @@ class ReadOperations:
                     "content": content,
                 }
             except Exception as e:
-                logger.error(f"TitleCRUD.search failed: {e}")
+                logger.error(f"TitleCRUD.search failed: {e}", exc_info=True)
                 return {
                     "pagination": Pagination(),
                     "content": [],
@@ -267,7 +294,7 @@ class ReadOperations:
 
     @staticmethod
     async def recommendations(
-        title_id: str,
+        title_id: int,
         user_id: int | None = None,
         limit: int = 20,
     ) -> dict[str, Any]:
@@ -276,7 +303,7 @@ class ReadOperations:
         Based on genre, type, rating similarity and popularity.
 
         Args:
-            title_id (str): The ID of the source title.
+            title_id (int): The ID of the source title.
             user_id (int | None): The user ID for user-specific data.
             limit (int): Number of recommendations to return.
 
@@ -360,5 +387,5 @@ class ReadOperations:
                 return {"content": content}
 
             except Exception as e:
-                logger.error(f"TitleCRUD.recommendations failed: {e}")
+                logger.error(f"TitleCRUD.recommendations failed: {e}", exc_info=True)
                 return {"content": []}

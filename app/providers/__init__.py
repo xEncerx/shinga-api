@@ -1,3 +1,3 @@
 from .remanga.client import RemangaProvider
-from .shiki.client import ShikiProvider
+from .shikimori.client import ShikimoriProvider
 from .mal.client import MalProvider

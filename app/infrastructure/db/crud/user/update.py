@@ -23,5 +23,5 @@ class UpdateOperations:
                 await session.commit()
                 return True
             except Exception as e:
-                logger.error(f"Failed to update user: {e}")
+                logger.error(f"Failed to update user: {e}", exc_info=True)
                 return False

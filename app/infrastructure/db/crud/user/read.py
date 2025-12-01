@@ -58,7 +58,7 @@ class ReadOperations:
                 return result.first()
 
             except Exception as e:
-                logger.error(f"Failed to get user: {e}")
+                logger.error(f"Failed to get user: {e}", exc_info=True)
                 return None
 
     @staticmethod
@@ -98,5 +98,5 @@ class ReadOperations:
                     vote_10=vote_counts[10],
                 )
             except Exception as e:
-                logger.error(f"Failed to get user votes: {e}")
+                logger.error(f"Failed to get user votes: {e}", exc_info=True)
                 return UserVotes()

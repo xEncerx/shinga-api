@@ -1,8 +1,9 @@
-from ..models.title.relations import TitleType
+from app.domain.enums import TitleType
+
 
 class TypeConverter:
     @staticmethod
-    def from_shiki(shiki_status: str) -> TitleType:
+    def from_shikimori(shikimori_status: str) -> TitleType:
         """Converts Shikimori title type string to TitleType enum."""
         mapping = {
             "manga": TitleType.MANGA,
@@ -13,12 +14,14 @@ class TypeConverter:
             "one_shot": TitleType.ONESHOT,
             "doujin": TitleType.DOUJIN,
         }
-        return mapping.get(shiki_status.lower(), TitleType.OTHER)
-    
+        return mapping.get(shikimori_status.lower(), TitleType.OTHER)
+
     @staticmethod
-    def to_shiki(type_: TitleType) -> str:
-        raise NotImplementedError("Conversion to Shikimori type is not implemented yet.")
-    
+    def to_shikimori(type_: TitleType) -> str:
+        raise NotImplementedError(
+            "Conversion to Shikimori type is not implemented yet."
+        )
+
     @staticmethod
     def from_mal(mal_status: str) -> TitleType:
         """Converts a MyAnimeList title type string to a TitleType enum."""
@@ -33,11 +36,13 @@ class TypeConverter:
             "webtoon": TitleType.WEBTOON,
         }
         return mapping.get(mal_status.lower(), TitleType.OTHER)
-    
+
     @staticmethod
     def to_mal(type_: TitleType) -> str:
-        raise NotImplementedError("Conversion to MyAnimeList type is not implemented yet.")
-    
+        raise NotImplementedError(
+            "Conversion to MyAnimeList type is not implemented yet."
+        )
+
     @staticmethod
     def from_remanga(remanga_status: str) -> TitleType:
         """Converts a Remanga title type string to a TitleType enum."""
@@ -50,7 +55,7 @@ class TypeConverter:
             "Рукомикс": TitleType.COMICS,
         }
         return mapping.get(remanga_status, TitleType.OTHER)
-    
+
     @staticmethod
     def to_remanga(type_: TitleType) -> str:
         raise NotImplementedError("Conversion to Remanga type is not implemented yet.")

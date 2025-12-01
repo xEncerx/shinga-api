@@ -1,4 +1,4 @@
-from app.utils.async_http_client import AsyncHttpClient, ClientTimeout
+from app.infrastructure.http import AsyncHttpClient
 from app.core import logger, settings
 from .base import BaseValueManager
 
@@ -75,7 +75,7 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
             proxies = list(set(proxies))
 
         except Exception as e:
-            logger.error(f"Error fetching proxies: {e}")
+            logger.error(f"Error fetching proxies: {e}", exc_info=True)
 
         return proxies
 
@@ -90,17 +90,14 @@ class ProxyManager(BaseValueManager, AsyncHttpClient):
             True if proxy is working, False otherwise
         """
         try:
-            response = await self.get(
-                self._test_url,
-                proxy=value,
-                response_type="text",
-            )
-            return True if response else False
+            async with self.get(self._test_url, proxy=value) as response:
+                response.raise_for_status()
+                return True
         except Exception as e:
             return False
 
     async def cleanup(self):
-        await self.http_client.close()
+        await self.session.close()
         return await super().cleanup()
 
     async def _fetch_from_file(self) -> list[str]:

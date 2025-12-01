@@ -1,2 +1,2 @@
 from .value import ProxyManager, ApiKeyManager
-from .task_manager import TaskManager
+from .media_manager import MediaManger

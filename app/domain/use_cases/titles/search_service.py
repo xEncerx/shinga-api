@@ -1,7 +1,7 @@
+from app.domain.enums import TitleGenre
 from app.infrastructure.db import (
     TitleCRUD,
     TitleSearchMode,
-    TitleGenre,
 )
 from app.api.v1.schemas import (
     TitlePaginationResponse,
@@ -72,7 +72,7 @@ class TitleSearchService:
 
     @staticmethod
     async def get_recommendations(
-        title_id: str,
+        title_id: int,
         user_id: int | None = None,
         limit: int = 20,
     ) -> TitleSearchResponse:
@@ -81,7 +81,7 @@ class TitleSearchService:
         Based on genre, type, rating similarity and popularity.
 
         Args:
-            title_id (str): The ID of the source title.
+            title_id (int): The ID of the source title.
             user_id (int | None): The user ID for user-specific data.
             limit (int): Number of recommendations to return.
 
@@ -110,14 +110,14 @@ class TitleSearchService:
 
     @staticmethod
     async def get_title_by_id(
-        title_id: str,
+        title_id: int,
         user_id: int | None = None,
     ) -> TitleWithUserData | None:
         """
         Get a title by its ID, including user-specific data if a user ID is provided.
 
         Args:
-            title_id (str): The ID of the title to retrieve.
+            title_id (int): The ID of the title to retrieve.
             user_id (int | None): The user ID for user-specific data.
         Returns:
             TitleWithUserData | None: The title with user data or None if not found.

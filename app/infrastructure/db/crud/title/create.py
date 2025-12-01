@@ -5,6 +5,7 @@ from ...models import Title
 
 from app.core import logger
 
+
 class CreateOperations:
     @staticmethod
     async def upsert(title: Title) -> bool:
@@ -13,11 +14,12 @@ class CreateOperations:
             try:
                 await session.merge(title)
                 await session.commit()
+                await session.refresh(title)
                 return True
             except Exception as e:
-                logger.error(f"Failed to upsert title: {e}")
+                logger.error(f"Failed to upsert title: {e}", exc_info=True)
                 return False
-            
+
     @staticmethod
     async def bulk(titles: list[Title]) -> bool:
         """Create multiple titles in the database, ignoring duplicates."""
@@ -29,5 +31,5 @@ class CreateOperations:
                 await session.commit()
                 return True
             except Exception as e:
-                logger.error(f"Failed to create titles: {e}")
+                logger.error(f"Failed to create titles: {e}", exc_info=True)
                 return False

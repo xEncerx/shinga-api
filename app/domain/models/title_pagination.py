@@ -1,8 +1,11 @@
+from typing import Generic, TypeVar
 from pydantic import BaseModel
 
-from ...infrastructure.db.models import Title
 from .pagination import Pagination
 
-class TitlePagination(BaseModel):
+T = TypeVar("T")
+
+
+class TitlePagination(BaseModel, Generic[T]):
     pagination: Pagination = Pagination()
-    data: list[Title] = []
+    data: list[T] = []

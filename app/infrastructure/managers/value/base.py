@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 from enum import Enum
 import aiosqlite
@@ -182,7 +181,7 @@ class BaseValueManager(ABC):
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in validation scheduler: {e}")
+                logger.error(f"Error in validation scheduler: {e}", exc_info=True)
                 await asyncio.sleep(min(60, self.validation_interval))  # type: ignore
 
     async def _fetch_scheduler(self) -> None:
@@ -196,7 +195,7 @@ class BaseValueManager(ABC):
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"Error in fetch scheduler: {e}")
+                logger.error(f"Error in fetch scheduler: {e}", exc_info=True)
 
     async def get_value(self, auto_mark_as_used: bool = True) -> str | None:
         """
@@ -493,7 +492,7 @@ class BaseValueManager(ABC):
             else:
                 logger.info(f"{self.__class__.__name__}: No new values fetched")
         except Exception as e:
-            logger.error(f"Error fetching values: {e}")
+            logger.error(f"Error fetching values: {e}", exc_info=True)
 
     # Abstract methods to be implemented by subclasses
     @abstractmethod

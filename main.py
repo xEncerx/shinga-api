@@ -31,7 +31,8 @@ app.add_exception_handler(RateLimitExceeded, slowapi_exception_handler)  # type:
 app.add_exception_handler(HTTPException, exception_handler)  # type: ignore
 app.add_exception_handler(RequestValidationError, pydantic_exception_handler)  # type: ignore
 
+setup_logging("app")
+
 
 if __name__ == "__main__":
-    setup_logging("app")
     uvicorn.run(app, log_config=None)

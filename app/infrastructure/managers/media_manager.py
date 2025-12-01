@@ -1,8 +1,8 @@
+from PIL import Image, ImageOps
 from fastapi import UploadFile
 from typing import Literal
 from pathlib import Path
 from uuid import uuid4
-from PIL import Image
 import aiofiles
 import asyncio
 import hashlib
@@ -10,8 +10,8 @@ import hashlib
 # import base64
 import io
 
+from app.infrastructure.http import AsyncHttpClient
 from app.core import settings, logger
-from app.utils import AsyncHttpClient
 
 
 class MediaManger(AsyncHttpClient):
@@ -42,13 +42,17 @@ class MediaManger(AsyncHttpClient):
         self.covers_path = self.storage_path / "covers"
         self.avatars_path = self.storage_path / "avatars"
 
-        self.SIZE_MAP = {"": (225, 319), "s": (112, 160), "l": (423, 600)}
+        self.SIZE_MAP = {
+            "": (300, 450),
+            "s": (150, 225),
+            "l": (600, 900),
+        }
 
-        super().__init__(proxy=proxy, timeout=timeout)
-
-    async def __aenter__(self) -> "MediaManger":
-        await super().__aenter__()
-        return self
+        super().__init__(
+            proxy=proxy,
+            timeout=timeout,
+            disable_ssl=True,
+        )
 
     def generate_filename(
         self,
@@ -60,7 +64,7 @@ class MediaManger(AsyncHttpClient):
         Generating a file name using a template: provider_id_size.webp
 
         Args:
-            provider (str): Provider name (mal, shiki, etc)
+            provider (str): Provider name (mal, shikimori, etc)
             content_id (str): Provider's content ID
             size (str): Size: "" (original), "s" (small), "l" (large)
 
@@ -88,13 +92,12 @@ class MediaManger(AsyncHttpClient):
         :return: Image data as bytes, or None if download failed
         """
         try:
-            return await self.get(
-                url=url,
-                response_type="bytes",
-                proxy=proxy,
-            )
+            async with self.get(url, proxy=proxy) as response:
+                response.raise_for_status()
+
+                return await response.read()
         except Exception as e:
-            logger.error(f"Error downloading image from {url}: {e}")
+            logger.error(f"Error downloading image from {url}: {e}", exc_info=True)
 
     def _process_image(
         self,
@@ -122,7 +125,7 @@ class MediaManger(AsyncHttpClient):
                 img = img.convert("RGB")
 
             if target_size:
-                img.thumbnail(target_size, Image.Resampling.LANCZOS)
+                img = ImageOps.contain(img, target_size, Image.Resampling.LANCZOS)
 
             img.save(
                 output_buffer,
@@ -132,7 +135,7 @@ class MediaManger(AsyncHttpClient):
             )
 
             return output_buffer.getvalue()
-        
+
     def delete_file(self, file_path: str) -> None:
         """
         Delete a file from the storage (if it exists).
@@ -145,7 +148,7 @@ class MediaManger(AsyncHttpClient):
             try:
                 path.unlink()
             except Exception as e:
-                logger.error(f"Failed to delete file {file_path}: {e}")
+                logger.error(f"Failed to delete file {file_path}: {e}", exc_info=True)
 
     async def save_cover(
         self,
@@ -160,7 +163,7 @@ class MediaManger(AsyncHttpClient):
 
         Args:
             image_url (str | None): URL of the source image
-            provider (str): Provider name (e.g., "mal", "shiki")
+            provider (str): Provider name (e.g., "mal", "shikimori")
             content_id (str): Unique content identifier
             force_redownload (bool): Whether to overwrite existing files
             proxy (str | None): Optional proxy URL for HTTP requests
@@ -170,13 +173,19 @@ class MediaManger(AsyncHttpClient):
         if not image_url:
             return [settings.COVER_404_PATH] * 3
 
-        # Empty image in MAL
-        if image_url.endswith("apple-touch-icon-256.png"):
-            return [settings.COVER_404_PATH] * 3
+        for postfix in settings.MISSING_COVER_PATTERNS:
+            if image_url.endswith(postfix):
+                return [settings.COVER_404_PATH] * 3
 
-        filename = self.generate_filename(provider, content_id, "l")
-        filepath = self.covers_path / filename
-        if filepath.exists() and not force_redownload:
+        all_exist = all(
+            (
+                self.covers_path
+                / self.generate_filename(provider, content_id, size_name)  # type: ignore
+            ).exists()
+            for size_name in self.SIZE_MAP.keys()
+        )
+
+        if all_exist and not force_redownload:
             return [
                 f"{settings.COVER_PUBLIC_PATH}/{self.generate_filename(provider, content_id, size_name)}"  # type: ignore
                 for size_name in self.SIZE_MAP.keys()
@@ -203,7 +212,7 @@ class MediaManger(AsyncHttpClient):
 
                 result.append(f"{settings.COVER_PUBLIC_PATH}/{filename}")
             except Exception as e:
-                logger.error(f"Failed to process cover size {size}: {str(e)}")
+                logger.error(f"Failed to process cover size {size}: {str(e)}", exc_info=True)
                 if filepath.exists():
                     filepath.unlink()
                 result.append(settings.COVER_404_PATH)
