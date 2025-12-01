@@ -1,3 +1,4 @@
+from aiohttp import ClientResponseError
 from PIL import Image, ImageOps
 from fastapi import UploadFile
 from typing import Literal
@@ -96,6 +97,8 @@ class MediaManger(AsyncHttpClient):
                 response.raise_for_status()
 
                 return await response.read()
+        except ClientResponseError as e:
+            logger.error(f"HTTP error {e.status} while downloading image from {url}: {e.message}", exc_info=True)
         except Exception as e:
             logger.error(f"Error downloading image from {url}: {e}", exc_info=True)
 
