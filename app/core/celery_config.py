@@ -69,7 +69,7 @@ celery_app.conf.update(
             "time_limit": 24 * 60 * 60,  # 24 hours
         },
         "app.tasks.download_media.cover": {
-            "rate_limit": "400/m",
+            "rate_limit": "300/m",
         },
     },
     # === Worker settings ===
