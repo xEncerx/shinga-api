@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 from enum import Enum
 import aiosqlite

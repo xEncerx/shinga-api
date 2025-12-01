@@ -1,4 +1,4 @@
-from app.infrastructure.http import AsyncHttpClient, ClientTimeout
+from app.infrastructure.http import AsyncHttpClient
 from app.core import logger, settings
 from .base import BaseValueManager
 
