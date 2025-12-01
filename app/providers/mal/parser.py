@@ -8,6 +8,7 @@ class MalParser(BaseParserProvider):
             source_id=str(data["mal_id"]),
             source_provider=SourceProvider.MAL,
             source_url=data["url"],
+            mal_id=data["mal_id"],
             cover=TitleCoverData(
                 url=data["images"]["webp"]["image_url"],
                 small_url=data["images"]["webp"]["small_image_url"],
