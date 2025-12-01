@@ -1,6 +1,7 @@
 from aiohttp import ClientSession, ClientResponse, ClientTimeout, TCPConnector
 from aiohttp.client import _RequestOptions, _RequestContextManager
 from aiohttp.typedefs import StrOrURL
+from fake_useragent import UserAgent
 
 from types import TracebackType
 import sys
@@ -50,6 +51,7 @@ class AsyncHttpClient:
         self._proxy = proxy
         self._disable_ssl = disable_ssl
         self._session: ClientSession | None = None
+        self._user_agent = UserAgent().random
 
     async def __aenter__(self):
         """
@@ -145,6 +147,11 @@ class AsyncHttpClient:
             RuntimeError: If the session is not initialized.
         """
         self._ensure_session()
+
+        headers = kwargs.get("headers", {})
+        if "User-Agent" not in headers and "user-agent" not in headers: # type: ignore
+            headers["User-Agent"] = self._user_agent # type: ignore
+            kwargs["headers"] = headers
 
         return self.session.request(method, url, **kwargs)
 
