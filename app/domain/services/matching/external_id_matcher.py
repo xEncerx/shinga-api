@@ -101,10 +101,6 @@ class ExternalIdMatcher(BaseMatcher):
                 )
                 candidates.append(candidate)
 
-            logger.info(
-                f"ExternalIdMatcher: Found {len(candidates)} candidates "
-                f"for mal_id={mal_id}"
-            )
             return candidates
 
         except Exception as e:
