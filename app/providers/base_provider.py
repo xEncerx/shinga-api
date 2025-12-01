@@ -156,7 +156,7 @@ def handle_provider_errors(provider_name: str):
                 ClientConnectionError,
                 ConnectionError,
             ) as e:
-                # Network/timeout errors - пробрасываем для retry
+                # Network/timeout errors - forward for retry
                 logger.warning(
                     f"{provider_name} network/timeout error: {type(e).__name__}"
                 )
