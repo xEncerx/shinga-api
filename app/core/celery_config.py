@@ -37,6 +37,7 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="Europe/Moscow",
     enable_utc=True,
+    task_protocol=2,
     # === Results ===
     result_expires=3600,  # 1 hour
     result_backend_transport_options={
@@ -73,8 +74,8 @@ celery_app.conf.update(
         },
     },
     # === Worker settings ===
-    worker_prefetch_multiplier=4,
-    worker_max_tasks_per_child=1000,
+    worker_prefetch_multiplier=2,
+    worker_max_tasks_per_child=500,
     worker_disable_rate_limits=False,
     # === Logging ===
     worker_hijack_root_logger=False,

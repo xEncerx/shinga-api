@@ -46,31 +46,30 @@ def download_cover_task(
             logger.warning("No title_id provided for cover download task")
             return {"success": False, "error": "No title_id provided"}
 
-        async with MediaManger() as media_manager:
-            covers = await media_manager.save_cover(
-                image_url=cover_url,
-                provider=source_provider,
-                content_id=str(title_id),
-            )
+        covers = await MediaManger().save_cover(
+            image_url=cover_url,
+            provider=source_provider,
+            content_id=str(title_id),
+        )
 
-            await TitleCRUD.update.title_cover(
-                title_id=title_id,
-                cover=TitleCover(
-                    url=covers[0],
-                    small_url=covers[1],
-                    large_url=covers[2],
-                ),
-            )
+        await TitleCRUD.update.title_cover(
+            title_id=title_id,
+            cover=TitleCover(
+                url=covers[0],
+                small_url=covers[1],
+                large_url=covers[2],
+            ),
+        )
 
-            if covers[0] == settings.COVER_404_PATH:
-                raise ValueError(f"Cover download resulted in 404 image for title_id={title_id}")
+        if covers[0] == settings.COVER_404_PATH:
+            raise ValueError(f"Cover download resulted in 404 image for title_id={title_id}")
 
-            logger.info(f"Cover downloaded for title_id={title_id}: {covers[0]}")
+        logger.info(f"Cover downloaded for title_id={title_id}: {covers[0]}")
 
-            return {
-                "success": True,
-                "title_id": title_id,
-            }
+        return {
+            "success": True,
+            "title_id": title_id,
+        }
 
     result = execute_async_task(run())
     return result

@@ -5,17 +5,16 @@ from typing import Literal
 from pathlib import Path
 from uuid import uuid4
 import aiofiles
-import asyncio
 import hashlib
+import gc
 
-# import base64
 import io
 
 from app.infrastructure.http import AsyncHttpClient
 from app.core import settings, logger
 
 
-class MediaManger(AsyncHttpClient):
+class MediaManger:
     """
     Manages image downloads, processing, and storage.
 
@@ -27,8 +26,6 @@ class MediaManger(AsyncHttpClient):
     def __init__(
         self,
         storage_path: str = settings.MEDIA_STORAGE_PATH,
-        proxy: str | None = None,
-        timeout: int = 10,
     ) -> None:
         """
         Initialize the CoverManager.
@@ -48,12 +45,6 @@ class MediaManger(AsyncHttpClient):
             "s": (150, 225),
             "l": (600, 900),
         }
-
-        super().__init__(
-            proxy=proxy,
-            timeout=timeout,
-            disable_ssl=True,
-        )
 
     def generate_filename(
         self,
@@ -75,9 +66,6 @@ class MediaManger(AsyncHttpClient):
         encoded = hashlib.sha1(raw_name.encode()).hexdigest()[:12]
         return f"{encoded}.webp"
 
-        # encoded = base64.b32encode(raw_name.encode()).decode().lower()
-        # return encoded.rstrip("=") + ".webp"
-
     async def _download_image(
         self,
         url: str,
@@ -93,12 +81,20 @@ class MediaManger(AsyncHttpClient):
         :return: Image data as bytes, or None if download failed
         """
         try:
-            async with self.get(url, proxy=proxy) as response:
-                response.raise_for_status()
+            async with AsyncHttpClient(
+                proxy=proxy,
+                timeout=10,
+                disable_ssl=True,
+            ) as client:
+                async with client.get(url) as response:
+                    response.raise_for_status()
 
-                return await response.read()
+                    return await response.read()
         except ClientResponseError as e:
-            logger.error(f"HTTP error {e.status} while downloading image from {url}: {e.message}", exc_info=True)
+            logger.error(
+                f"HTTP error {e.status} while downloading image from {url}: {e.message}",
+                exc_info=True,
+            )
         except Exception as e:
             logger.error(f"Error downloading image from {url}: {e}", exc_info=True)
 
@@ -116,28 +112,31 @@ class MediaManger(AsyncHttpClient):
 
         :return: Processed image data in WebP format as bytes
         """
-        with (
-            io.BytesIO(image_data) as input_buffer,
-            Image.open(input_buffer) as img,
-            io.BytesIO() as output_buffer,
-        ):
-            if img.size == target_size:
-                return image_data
+        try:
+            with (
+                io.BytesIO(image_data) as input_buffer,
+                Image.open(input_buffer) as img,
+                io.BytesIO() as output_buffer,
+            ):
+                if img.size == target_size:
+                    return image_data
 
-            if img.mode == "RGBA":
-                img = img.convert("RGB")
+                if img.mode == "RGBA":
+                    img = img.convert("RGB")
 
-            if target_size:
-                img = ImageOps.contain(img, target_size, Image.Resampling.LANCZOS)
+                if target_size:
+                    img = ImageOps.contain(img, target_size, Image.Resampling.LANCZOS)
 
-            img.save(
-                output_buffer,
-                format="WEBP",
-                quality=95,
-                method=6,
-            )
+                img.save(
+                    output_buffer,
+                    format="WEBP",
+                    quality=95,
+                    method=6,
+                )
 
-            return output_buffer.getvalue()
+                return output_buffer.getvalue()
+        finally:
+            gc.collect()
 
     def delete_file(self, file_path: str) -> None:
         """
@@ -215,7 +214,9 @@ class MediaManger(AsyncHttpClient):
 
                 result.append(f"{settings.COVER_PUBLIC_PATH}/{filename}")
             except Exception as e:
-                logger.error(f"Failed to process cover size {size}: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Failed to process cover size {size}: {str(e)}", exc_info=True
+                )
                 if filepath.exists():
                     filepath.unlink()
                 result.append(settings.COVER_404_PATH)
@@ -232,35 +233,18 @@ class MediaManger(AsyncHttpClient):
         Returns:
             str: Public Path with UUID of the saved avatar
         """
-        filename = f"{uuid4()}.webp"
-        file_path = self.avatars_path / filename
+        try:
+            filename = f"{uuid4()}.webp"
+            file_path = self.avatars_path / filename
 
-        avatar_bytes = await avatar.read()
+            avatar_bytes = await avatar.read()
+            processed_data = self._process_image(avatar_bytes, (200, 200))
+            
+            async with aiofiles.open(file_path, "wb") as f:
+                await f.write(processed_data)
 
-        processed_data = self._process_image(avatar_bytes, (200, 200))
-        async with aiofiles.open(file_path, "wb") as f:
-            await f.write(processed_data)
-
-        return f"{settings.AVATAR_PUBLIC_PATH}/{filename}"
-
-    async def batch_covers_save(
-        self,
-        images: list[tuple[str | None, str, str]],
-        force_redownload: bool = False,
-        proxy: str | None = None,
-    ) -> list[list[str]]:
-        """
-        Batch process and save multiple cover images.
-
-        Args:
-            images: List of tuples (image_url, provider, content_id)
-            force_redownload (bool): Whether to overwrite existing files
-            proxy (str | None): Optional proxy URL for HTTP requests
-
-        :return: List of lists containing public URLs for each image in all three sizes
-        """
-        tasks = [
-            self.save_cover(image_url, provider, content_id, force_redownload, proxy)
-            for image_url, provider, content_id in images
-        ]
-        return await asyncio.gather(*tasks)
+            return f"{settings.AVATAR_PUBLIC_PATH}/{filename}"
+        
+        except Exception as e:
+            logger.error(f"Failed to save avatar: {e}")
+            return settings.DEFAULT_AVATAR_PATH

@@ -71,11 +71,12 @@ class Settings(BaseSettings):
     MEDIA_STORAGE_PATH: str = "app/api/media"
     COVER_STORAGE_PATH: str = f"{MEDIA_STORAGE_PATH}/covers"
     AVATAR_STORAGE_PATH: str = f"{MEDIA_STORAGE_PATH}/avatars"
+    # Public paths
     COVER_PUBLIC_PATH: str = "/media/covers"
     AVATAR_PUBLIC_PATH: str = "/media/avatars"
-    COVER_404_PATH: str = "/media/covers/404.webp"
-    COVER_PENDING_PATH: str = "/media/covers/pending.webp"
-    DEFAULT_AVATAR_PATH: str = "/media/avatars/default.webp"
+    COVER_404_PATH: str = f"{COVER_PUBLIC_PATH}/404.webp"
+    COVER_PENDING_PATH: str = f"{COVER_PUBLIC_PATH}/pending.webp"
+    DEFAULT_AVATAR_PATH: str = f"{AVATAR_PUBLIC_PATH}/default.webp"
 
     # URL patterns that indicate a missing cover image (404)
     MISSING_COVER_PATTERNS: list[str] = ["apple-touch-icon-256.png"]

@@ -58,8 +58,10 @@ services:
       celery -A app.tasks.celery_app worker
       -Q scraping,consolidation,refresh_titles
       -n main@%h
-      --concurrency=4
-      --autoscale=6,2
+      --concurrency=6
+      --autoscale=8,2
+      --max-tasks-per-child=500
+      --prefetch-multiplier=2
     env_file:
       - .env
     environment:
@@ -87,6 +89,8 @@ services:
       -n download_media@%h
       --concurrency=4
       --autoscale=6,2
+      --max-tasks-per-child=100
+      --prefetch-multiplier=1
     env_file:
       - .env
     environment:

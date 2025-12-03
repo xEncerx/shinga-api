@@ -33,15 +33,15 @@ async def upload_avatar(
         raise FileExtensionNotAllowed()
 
     try:
-        async with MediaManger() as media_manager:
-            # Save new avatar
-            avatar_path = await media_manager.save_avatar(avatar)  # type: ignore
+        media_manager = MediaManger()
+        # Save new avatar
+        avatar_path = await media_manager.save_avatar(avatar)  # type: ignore
 
-            if not avatar_path:
-                raise FileRelatedError(detail="Failed to save avatar. Try again later.")
-            
-            # Delete old avatar if it exists
-            media_manager.delete_file(current_user.avatar)
+        if not avatar_path:
+            raise FileRelatedError(detail="Failed to save avatar. Try again later.")
+        
+        # Delete old avatar if it exists
+        media_manager.delete_file(current_user.avatar)
 
         await UserCRUD.update.fields(
             user_id=current_user.id,  # type: ignore
