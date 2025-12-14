@@ -25,7 +25,7 @@ class BaseRefreshTitlesTask(Task):
 )
 def refresh_all(
     self,
-    update_window_hours: int = 5,
+    update_window_hours: int = 168,
     batch_size: int = 100,
 ) -> dict:
     """
