@@ -71,7 +71,7 @@ class TitleUpdateService:
                     title_data = TitleData.from_raw_dict(source_data.raw_data)
 
                     # Gradually merge data from each source
-                    merged_title = await self.merger.merge_sources(
+                    merged_title = self.merger.merge_sources(
                         existing_title=merged_title,
                         new_title_data=title_data,
                     )

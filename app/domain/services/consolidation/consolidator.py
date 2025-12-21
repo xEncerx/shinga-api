@@ -74,7 +74,7 @@ class ConsolidationService:
                 raise ValueError("Matched title not found")
 
             # Merge data
-            merged_title = await self.merger.merge_sources(
+            merged_title = self.merger.merge_sources(
                 existing_title=existing_title,
                 new_title_data=title_data,
             )

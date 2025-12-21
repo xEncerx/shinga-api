@@ -23,7 +23,7 @@ class DataMerger:
     - Covers: source priority
     """
 
-    async def merge_sources(
+    def merge_sources(
         self,
         existing_title: Title,
         new_title_data: TitleData,
@@ -123,7 +123,7 @@ class DataMerger:
         if (
             not merged_cover.url or merged_cover.url.startswith("http")
         ) or merged_cover.url == settings.COVER_404_PATH:
-            merged_cover = await self.download_covers(
+            merged_cover = self.download_covers(
                 title_id=existing_title.id,  # type: ignore
                 cover_url=new_title_data.cover.url,  # type: ignore
                 source_provider=new_title_data.source_provider,
