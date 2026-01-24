@@ -1,0 +1,16 @@
+aiohttp==3.13.3
+aiolimiter==1.2.1
+alembic==1.18.1
+asyncpg==0.31.0
+aiofiles==25.1.0
+loguru==0.7.3
+pydantic-settings==2.12.0
+pillow==12.1.0
+fake-useragent==2.2.0
+sqlmodel==0.0.31
+Unidecode==1.4.0
+pytest==9.0.2
+thefuzz==0.22.1
+fastapi==0.128.0
+taskiq-redis==1.2.1
+taskiq==0.12.1
