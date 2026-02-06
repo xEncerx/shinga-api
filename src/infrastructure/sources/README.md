@@ -30,11 +30,16 @@ Edit `your_source/client.py` and customize the following:
 
 ```python
 BASE_URL = "https://your-api.com/api/"
-REQUESTS_PER_SECOND = 3.0
+# Rate limit = 3 requests per second
+RATE_LIMIT_REQUESTS = 3
+RATE_LIMIT_PERIOD = 1
 ```
 
 - **BASE_URL**: The base URL for API requests
-- **REQUESTS_PER_SECOND**: Request rate limit (enforced by AsyncHttpClient with aiolimiter)
+- **RATE_LIMIT_REQUESTS**: Maximum number of requests allowed within the rate limit period
+- **RATE_LIMIT_PERIOD**: Time period in seconds for the rate limit window
+
+Rate limiting is automatically enforced by `AsyncHttpClient` using `aiolimiter`. 
 
 #### Required Methods
 
@@ -169,7 +174,7 @@ Add your source to the `Source` enum:
 ```python
 class Source(str, Enum):
     # ... existing sources
-    YOUR_SOURCE = "your_source"
+    YOUR_SOURCE = "YOUR_SOURCE"
 ```
 
 **In `src/infrastructure/sources/__init__.py`:**

@@ -14,8 +14,11 @@ class BaseProvider(ABC, AsyncHttpClient):
 
     # Base URL for the provider's API.
     BASE_URL: str | None = None
-    # Maximum number of requests per second allowed for this provider.
-    REQUESTS_PER_SECOND: float | None = None
+
+    # Maximum number of requests allowed for this provider within the specified period.
+    # Calculated as requests per second.
+    RATE_LIMIT_REQUESTS: float | None = None
+    RATE_LIMIT_PERIOD: int = 1
 
     def __init__(
         self,
@@ -26,7 +29,7 @@ class BaseProvider(ABC, AsyncHttpClient):
         """
         Initialize the base provider.
 
-        - Automatically sets up rate limiting based on REQUESTS_PER_SECOND.
+        - Automatically sets up rate limiting based on RATE_LIMIT_REQUESTS and RATE_LIMIT_PERIOD.
 
         Args:
             timeout (float): Timeout for HTTP requests.
@@ -35,8 +38,8 @@ class BaseProvider(ABC, AsyncHttpClient):
         """
 
         limiter: AsyncLimiter | None = None
-        if self.REQUESTS_PER_SECOND:
-            limiter = AsyncLimiter(self.REQUESTS_PER_SECOND, 1)
+        if self.RATE_LIMIT_REQUESTS:
+            limiter = AsyncLimiter(self.RATE_LIMIT_REQUESTS, self.RATE_LIMIT_PERIOD)
 
         super().__init__(self.BASE_URL, timeout, disable_ssl, proxy, limiter)
 

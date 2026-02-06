@@ -4,7 +4,8 @@ from .parser import MalParser
 
 class MalClient(BaseProvider):
     BASE_URL = "https://api.jikan.moe/v4/"
-    REQUESTS_PER_SECOND = 1.2
+    RATE_LIMIT_REQUESTS = 1.2
+    RATE_LIMIT_PERIOD = 1
 
     async def get_by_id(self, external_id: str) -> SourceTitleData | None:
         async with self.get(f"manga/{external_id}") as response:

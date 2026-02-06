@@ -21,6 +21,14 @@ def setup_fastapi_logging() -> None:
         logging_logger.propagate = False
 
 
+def setup_taskiq_logging() -> None:
+    remove_taskiq_loggers = ["taskiq.receiver.receiver"]
+    for log_name in remove_taskiq_loggers:
+        logging_logger = logging.getLogger(log_name)
+        logging_logger.handlers = []
+        logging_logger.propagate = False
+
+
 def setup_logger(flavor: EnvFlavor, level: str = "INFO") -> None:
     """Sets up the logging configuration for the application."""
     logger.remove()  # Remove default logger
@@ -31,16 +39,10 @@ def setup_logger(flavor: EnvFlavor, level: str = "INFO") -> None:
         colorize=False if flavor == EnvFlavor.PRODUCTION else True,
         backtrace=True,
         diagnose=True,
+        serialize=True if flavor == EnvFlavor.PRODUCTION else False,
     )
 
-    if flavor == EnvFlavor.DEVELOPMENT:
-        logger.add(
-            sys.stdout,
-            format="{time} {level} {message}",
-            level="INFO",
-            serialize=True,
-        )
-
     setup_fastapi_logging()
+    setup_taskiq_logging()
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)

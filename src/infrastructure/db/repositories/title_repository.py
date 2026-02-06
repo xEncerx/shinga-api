@@ -6,13 +6,12 @@ from datetime import datetime, timedelta, timezone
 from src.domain.models.titles import (
     SourceTitleData,
     TitleData,
-    SourceMetadata,
     TitleCover,
 )
 from src.infrastructure.db.models import TitleRawDataDBModel, TitleDBModel
 from src.domain.models.services.enums import ConsolidationStatus
 from src.domain.interfaces import ITitleRepository
-from src.infrastructure.db.mappers import TitleMapper
+from src.infrastructure.db.mappers import *
 
 
 class TitleRepository(ITitleRepository):
@@ -23,15 +22,7 @@ class TitleRepository(ITitleRepository):
         self,
         raw_title: SourceTitleData,
     ) -> int | None:
-        insert_values = {
-            "source": raw_title.source_metadata.source,
-            "external_id": raw_title.source_metadata.external_id,
-            "source_url": raw_title.source_metadata.source_url,
-            "is_deleted": raw_title.source_metadata.is_deleted,
-            "raw_data": raw_title.title_data.model_dump(mode="json"),
-            "extended_data": raw_title.source_metadata.extended_data or {},
-            "consolidation_status": ConsolidationStatus.PENDING,
-        }
+        insert_values = SourceTitleDataMapper.to_db_dict(raw_title)
 
         stmt = pg_insert(TitleRawDataDBModel).values(**insert_values)
         stmt = stmt.on_conflict_do_update(
@@ -57,18 +48,7 @@ class TitleRepository(ITitleRepository):
         if not result:
             return None
 
-        title_data = TitleData.model_validate(result.raw_data)
-
-        return SourceTitleData(
-            source_metadata=SourceMetadata(
-                source=result.source,
-                external_id=result.external_id,
-                source_url=result.source_url,
-                is_deleted=result.is_deleted,
-                extended_data=result.extended_data,
-            ),
-            title_data=title_data,
-        )
+        return SourceTitleDataMapper.to_domain(result)
 
     async def get_unmapped_raw_titles(self, limit: int) -> list[int]:
         stmt = (
@@ -136,40 +116,18 @@ class TitleRepository(ITitleRepository):
         search_text: str,
         data_quality_score: float,
     ) -> int:
-        sm = title_data.source_metadata
-        td = title_data.title_data
-
-        master_title = TitleDBModel(
-            mal_id=td.mal_id,
+        master_title = TitleDataMapper.to_db(
+            domain_model=title_data.title_data,
             search_text=search_text,
-            name_ru=td.name_ru,
-            name_en=td.name_en,
-            alt_names=td.alt_names,
-            description_ru=td.description_ru,
-            description_en=td.description_en,
-            popularity=td.popularity,
-            rating=td.rating,
-            scored_by=td.scored_by,
-            chapters=td.chapters,
-            volumes=td.volumes,
-            views=td.views,
-            favorites=td.favorites,
-            genres=td.genres,
-            categories=td.categories,
-            authors=td.authors,
-            cover=td.cover or TitleCover.pending(),
-            released_at=td.released_at,
-            ended_at=td.ended_at,
-            type=td.type,
-            status=td.status,
             data_quality_score=data_quality_score,
-            primary_source=sm.source,
-            extended_data=sm.extended_data or {},
+            primary_source=title_data.source_metadata.source,
+            extended_data=title_data.source_metadata.extended_data,
         )
 
         self._session.add(master_title)
         await self._session.flush()
         await self._session.refresh(master_title)
+
         return master_title.id  # type: ignore
 
     async def get_master_title(self, master_title_id: int) -> TitleData | None:
@@ -177,7 +135,7 @@ class TitleRepository(ITitleRepository):
         if not result:
             return None
 
-        return TitleMapper.title_db_to_title_data(result)
+        return TitleDataMapper.to_domain(result)
 
     async def get_master_title_for_update(
         self,
@@ -216,7 +174,7 @@ class TitleRepository(ITitleRepository):
         raw_titles = result.all()
 
         titles = [
-            TitleData.model_validate(raw_title.raw_data) for raw_title in raw_titles
+            TitleDataMapper.to_domain(raw_title.raw_data) for raw_title in raw_titles
         ]
         return titles
 
@@ -268,7 +226,7 @@ class TitleRepository(ITitleRepository):
         if not master_title:
             return None
 
-        return (TitleMapper.title_db_to_title_data(master_title), master_title.id)  # type: ignore
+        return (TitleDataMapper.to_domain(master_title), master_title.id)  # type: ignore
 
     async def get_master_by_name(
         self,
@@ -297,7 +255,7 @@ class TitleRepository(ITitleRepository):
 
         result = await self._session.exec(stmt)
         return [
-            (TitleMapper.title_db_to_title_data(i[0]), i[0].id) for i in result.all()
+            (TitleDataMapper.to_domain(i[0]), i[0].id) for i in result.all()
         ]  # type: ignore
 
     async def update_master_title_cover(

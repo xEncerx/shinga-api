@@ -82,6 +82,6 @@ class SourceManager:
 
         provider = self._providers.get(source)
         if not provider:
-            raise ValueError(f"Provider for source {source.value.upper()} not found.")
+            raise ValueError(f"Provider for source {source.name} not found.")
 
         return provider

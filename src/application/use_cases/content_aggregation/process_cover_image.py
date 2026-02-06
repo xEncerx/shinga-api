@@ -47,8 +47,8 @@ class ProcessImageUseCase:
             source (Source): Source enum value representing the source (e.g., Source.MAL, Source.SHIKIMORI).
             external_id (str): External identifier for the title.
         """
-        result = ProcessImageResult(source=source.value, external_id=external_id)
-        file_hash = MediaHashGenerator.generate_cover_hash(source.value, external_id)
+        result = ProcessImageResult(source=source.name, external_id=external_id)
+        file_hash = MediaHashGenerator.generate_cover_hash(source.name, external_id)
 
         # 1. Check if image variants already exist
         check_image_size = list(settings.COVER_VARIANTS.keys())[0]

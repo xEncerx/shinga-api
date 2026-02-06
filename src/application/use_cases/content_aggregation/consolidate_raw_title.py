@@ -120,7 +120,7 @@ class ConsolidateRawTitleUseCase:
             raw_title_id=raw_title_id,
             master_title_id=master_title_id,
             external_id=raw_title.source_metadata.external_id,
-            source=raw_title.source_metadata.source.value,
+            source=raw_title.source_metadata.source.name,
             is_new=is_new,
             cover_url=cover_url,
         )

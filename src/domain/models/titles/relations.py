@@ -7,6 +7,7 @@ from src.core.settings import settings
 __all__ = [
     "TitleType",
     "TitleStatus",
+    "TitleBookmark",
     "TitleGenre",
     "TitleCategory",
     "TitleCover",
@@ -26,26 +27,34 @@ class TitleCover(BaseModel):
 
 
 class TitleType(str, Enum):
-    MANGA = "manga"
-    NOVEL = "novel"
-    LIGHT_NOVEL = "light novel"
-    ONESHOT = "one-shot"
-    DOUJIN = "doujinshi"
-    MANHWA = "manhwa"
-    MANHUA = "manhua"
-    COMICS = "comics"
-    WEBTOON = "webtoon"
-    OTHER = "other"
+    MANGA = "MANGA"
+    NOVEL = "NOVEL"
+    LIGHT_NOVEL = "LIGHT_NOVEL"
+    ONESHOT = "ONESHOT"
+    DOUJIN = "DOUJIN"
+    MANHWA = "MANHWA"
+    MANHUA = "MANHUA"
+    COMICS = "COMICS"
+    WEBTOON = "WEBTOON"
+    OTHER = "OTHER"
 
 
 class TitleStatus(str, Enum):
-    ONGOING = "ongoing"
-    FINISHED = "finished"
-    DISCONTINUED = "discontinued"
-    LICENSED = "licensed"
-    FROZEN = "frozen"
-    ANONS = "anons"
-    UNKNOWN = "unknown"
+    ONGOING = "ONGOING"
+    FINISHED = "FINISHED"
+    DISCONTINUED = "DISCONTINUED"
+    LICENSED = "LICENSED"
+    FROZEN = "FROZEN"
+    ANONS = "ANONS"
+    UNKNOWN = "UNKNOWN"
+
+
+class TitleBookmark(str, Enum):
+    NOT_READING = "NOT_READING"
+    READING = "READING"
+    COMPLETED = "COMPLETED"
+    DROPPED = "DROPPED"
+    PLANNING = "PLANNING"
 
 
 @dataclass(frozen=True)
@@ -101,7 +110,6 @@ class TitleGenre(TitleGenreDetail, Enum):
     SUSPENSE = "Триллер", "Suspense"
     TRAGEDY = "Трагедия", "Tragedy"
     THRILLER = "Триллер", "Thriller"
-    UNKNOWN = "Неизвестно", "Unknown"
 
 
 @dataclass(frozen=True)
@@ -594,4 +602,3 @@ class TitleCategory(TitleCategoryDetail, Enum):
     YURI = "Юри", "Yuri"
     ZOMBIES = "Зомби", "Zombies"
     ZOOPHILIA = "Зоофилия", "Zoophilia"
-    UNKNOWN = "Неизвестно", "Unknown"

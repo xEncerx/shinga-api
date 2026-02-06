@@ -4,7 +4,7 @@ __all__ = ["ConsolidationStatus"]
 
 
 class ConsolidationStatus(str, Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    CONSOLIDATED = "consolidated"
-    FAILED = "failed"
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    CONSOLIDATED = "CONSOLIDATED"
+    FAILED = "FAILED"

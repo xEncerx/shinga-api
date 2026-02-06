@@ -9,7 +9,9 @@ class CustomClient(BaseProvider):
     """
 
     BASE_URL = "https://your-api.com/api/"
-    REQUESTS_PER_SECOND = 3.0
+    # Rate limit = 3 requests per second
+    RATE_LIMIT_REQUESTS = 3
+    RATE_LIMIT_PERIOD = 1
 
     async def get_by_id(self, external_id: str) -> SourceTitleData | None:
         """

@@ -38,11 +38,14 @@ class RemangaParser(BaseParser):
                 else None
             ),
             genres=[
-                RemangaParser.convert_genre(genre["name"]) for genre in data["genres"]
+                genre
+                for genre_name in data["genres"]
+                if (genre := RemangaParser.convert_genre(genre_name["name"]))
             ],
             categories=[
-                RemangaParser.convert_category(category["name"])
-                for category in data["categories"]
+                category
+                for category_name in data["categories"]
+                if (category := RemangaParser.convert_category(category_name["name"]))
             ],
             alt_names=(
                 [name for i in data["another_name"].split("/") if (name := i.strip())]
@@ -97,12 +100,12 @@ class RemangaParser(BaseParser):
         return RemangaParser._STATUS_MAPPING.get(data.lower(), TitleStatus.UNKNOWN)
 
     @staticmethod
-    def convert_genre(data: str) -> TitleGenre:
-        return RemangaParser._GENRE_MAPPING.get(data, TitleGenre.UNKNOWN)
+    def convert_genre(data: str) -> TitleGenre | None:
+        return RemangaParser._GENRE_MAPPING.get(data)
 
     @staticmethod
-    def convert_category(data: str) -> TitleCategory:
-        return RemangaParser._CATEGORY_MAPPING.get(data, TitleCategory.UNKNOWN)
+    def convert_category(data: str) -> TitleCategory | None:
+        return RemangaParser._CATEGORY_MAPPING.get(data)
 
     # === Mappings ===
     _GENRE_MAPPING = {

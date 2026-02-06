@@ -32,10 +32,15 @@ class MalParser(BaseParser):
             ended_at=(
                 datetime.fromisoformat(x) if (x := data["published"]["to"]) else None
             ),
-            genres=[MalParser.convert_genre(genre["name"]) for genre in data["genres"]],
+            genres=[
+                genre
+                for genre_name in data["genres"]
+                if (genre := MalParser.convert_genre(genre_name["name"]))
+            ],
             categories=[
-                MalParser.convert_category(category["name"])
-                for category in data["themes"]
+                category
+                for category_name in data["categories"]
+                if (category := MalParser.convert_category(category_name["name"]))
             ],
             authors=[author["name"] for author in data["authors"]],
             alt_names=data["title_synonyms"],
@@ -80,12 +85,12 @@ class MalParser(BaseParser):
         return MalParser._STATUS_MAPPING.get(data.lower(), TitleStatus.UNKNOWN)
 
     @staticmethod
-    def convert_genre(data: str) -> TitleGenre:
-        return MalParser._GENRE_MAPPING.get(data, TitleGenre.UNKNOWN)
+    def convert_genre(data: str) -> TitleGenre | None:
+        return MalParser._GENRE_MAPPING.get(data)
 
     @staticmethod
-    def convert_category(data: str) -> TitleCategory:
-        return MalParser._CATEGORY_MAPPING.get(data, TitleCategory.UNKNOWN)
+    def convert_category(data: str) -> TitleCategory | None:
+        return MalParser._CATEGORY_MAPPING.get(data)
 
     # === Mappings ===
     _GENRE_MAPPING = {

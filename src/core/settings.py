@@ -22,7 +22,6 @@ class Settings(BaseSettings):
 
     # Api settings
     API_URL: str = "http://localhost:8000"
-    API_V1_STR: str = "/api/v1"
 
     # Network settings
     PROXY: str | None = None
@@ -38,6 +37,27 @@ class Settings(BaseSettings):
     REDIS_HOST: str
     REDIS_PORT: int = 6379
 
+    # Security settings
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24 * 60  # 30 days
+    ALGORITHM: str = "HS256"
+
+    # Storage settings
+    STORAGE_BASE_PATH: str = "storage/"
+    COVER_STORAGE_FOLDER: str = "covers/"
+    COVER_PUBLIC_URL: str = "/static/covers/"
+
+    PENDING_COVER_URL: str = "/static/covers/pending.webp"
+
+    # Cover processing settings
+    COVER_VARIANTS: dict[str, tuple[int, int]] = {
+        "thumbnail": (150, 225),
+        "original": (300, 450),
+    }
+    IMAGE_QUALITY: int = 95
+    BASE_IMAGE_FORMAT: str = "webp"
+
+    # === Utility properties ===
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> MultiHostUrl:
         return MultiHostUrl.build(
@@ -56,21 +76,6 @@ class Settings(BaseSettings):
             host=self.REDIS_HOST,
             port=self.REDIS_PORT,
         )
-
-    # Storage settings
-    STORAGE_BASE_PATH: str = "storage/"
-    COVER_STORAGE_FOLDER: str = "covers/"
-    COVER_PUBLIC_URL: str = "/static/covers/"
-
-    PENDING_COVER_URL: str = "/static/covers/pending.webp"
-
-    # Cover processing settings
-    COVER_VARIANTS: dict[str, tuple[int, int]] = {
-        "thumbnail": (150, 225),
-        "original": (300, 450),
-    }
-    IMAGE_QUALITY: int = 95
-    BASE_IMAGE_FORMAT: str = "webp"
 
 
 settings = Settings()  # type: ignore

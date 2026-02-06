@@ -4,7 +4,8 @@ __all__ = ["Source"]
 
 
 class Source(str, Enum):
-    MAL = "mal"
-    SHIKIMORI = "shikimori"
-    REMANGA = "remanga"
-    CUSTOM = "custom"
+    MAL = "MYANIMELIST"
+    SHIKIMORI = "SHIKIMORI"
+    REMANGA = "REMANGA"
+    ANILIST = "ANILIST"
+    CUSTOM = "CUSTOM"

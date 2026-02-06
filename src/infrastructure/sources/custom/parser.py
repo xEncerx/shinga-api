@@ -48,11 +48,14 @@ class CustomParser(BaseParser):
             ),
             # Genres and categories are converted using mapping dictionaries below
             genres=[
-                CustomParser.convert_genre(genre["name"]) for genre in data["genres"]
+                genre
+                for genre_name in data["genres"]
+                if (genre := CustomParser.convert_genre(genre_name["name"]))
             ],
             categories=[
-                CustomParser.convert_category(category["name"])
-                for category in data["themes"]
+                category
+                for category_name in data["categories"]
+                if (category := CustomParser.convert_category(category_name["name"]))
             ],
             # Authors and alternative names are optional
             authors=[author["name"] for author in data["authors"]],
@@ -85,12 +88,12 @@ class CustomParser(BaseParser):
                 parsed_titles.append(CustomParser.parse_title(item))
             except (ValueError, KeyError) as e:
                 logger.error(
-                    f"Skipping Mal title id={item['mal_id']}: {e}", exc_info=True
+                    f"Skipping Custom title id={item['id']}: {e}", exc_info=True
                 )
                 continue
             except Exception as e:
                 logger.error(
-                    f"Unexpected error parsing Mal title id={item['mal_id']}: {e}",
+                    f"Unexpected error parsing Custom title id={item['id']}: {e}",
                     exc_info=True,
                 )
                 continue
@@ -107,12 +110,12 @@ class CustomParser(BaseParser):
         return CustomParser._STATUS_MAPPING.get(data.lower(), TitleStatus.UNKNOWN)
 
     @staticmethod
-    def convert_genre(data: str) -> TitleGenre:
-        return CustomParser._GENRE_MAPPING.get(data, TitleGenre.UNKNOWN)
+    def convert_genre(data: str) -> TitleGenre | None:
+        return CustomParser._GENRE_MAPPING.get(data)
 
     @staticmethod
-    def convert_category(data: str) -> TitleCategory:
-        return CustomParser._CATEGORY_MAPPING.get(data, TitleCategory.UNKNOWN)
+    def convert_category(data: str) -> TitleCategory | None:
+        return CustomParser._CATEGORY_MAPPING.get(data)
 
     # === Mapping Dictionaries ===
     # Map your source's values to standardized enums

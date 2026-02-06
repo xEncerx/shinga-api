@@ -102,7 +102,7 @@ class TitleRawDataDBModel(SQLModel, table=True):
             "consolidation_status",
             "fetched_at",
             postgresql_where=Column("consolidation_status")
-            == ConsolidationStatus.PENDING.value.upper(),
+            == ConsolidationStatus.PENDING.name,
         ),
         # Composite index for finding raw titles by master_title_id (for updates)
         Index(

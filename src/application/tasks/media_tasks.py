@@ -56,15 +56,15 @@ async def download_cover_task(
                 )
 
         logger.info(
-            f"Processed cover: master_title_id={master_title_id}, source={source.value.upper()}, external_id={external_id}"
+            f"Processed cover: master_title_id={master_title_id}, source={source.name}, external_id={external_id}"
         )
     except RETRYABLE_EXCEPTIONS as e:
         logger.warning(
-            f"Retryable error processing cover: master_title_id={master_title_id}, source={source.value.upper()}, external_id={external_id}: {e}"
+            f"Retryable error processing cover: master_title_id={master_title_id}, source={source.name}, external_id={external_id}: {e}"
         )
         raise e
     except Exception as e:
         logger.error(
-            f"Unexpected error processing cover: master_title_id={master_title_id}, source={source.value.upper()}, external_id={external_id}: {e}"
+            f"Unexpected error processing cover: master_title_id={master_title_id}, source={source.name}, external_id={external_id}: {e}"
         )
         return None

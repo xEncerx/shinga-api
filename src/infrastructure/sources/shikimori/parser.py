@@ -37,14 +37,18 @@ class ShikimoriParser(BaseParser):
                 else None
             ),
             genres=[
-                ShikimoriParser.convert_genre(genre["name"])
-                for genre in data["genres"]
-                if genre["kind"] == "genre"
+                genre
+                for genre_name in data["genres"]
+                if genre_name["kind"] == "genre"
+                and (genre := ShikimoriParser.convert_genre(genre_name["name"]))
             ],
             categories=[
-                ShikimoriParser.convert_category(category["name"])
-                for category in data["genres"]
-                if category["kind"] == "theme"
+                category
+                for category_name in data["genres"]
+                if category_name["kind"] == "theme"
+                and (
+                    category := ShikimoriParser.convert_category(category_name["name"])
+                )
             ],
             authors=[i["person"].get("name", "unknown") for i in data["personRoles"]],
             alt_names=data["synonyms"],
@@ -65,7 +69,6 @@ class ShikimoriParser(BaseParser):
             try:
                 parsed_titles.append(ShikimoriParser.parse_title(item))
             except (ValueError, KeyError) as e:
-                print(item)
                 logger.error(
                     f"Skipping Shikimori title id={item['id']}: {e}",
                     exc_info=True,
@@ -90,12 +93,12 @@ class ShikimoriParser(BaseParser):
         return ShikimoriParser._STATUS_MAPPING.get(data.lower(), TitleStatus.UNKNOWN)
 
     @staticmethod
-    def convert_genre(data: str) -> TitleGenre:
-        return ShikimoriParser._GENRE_MAPPING.get(data, TitleGenre.UNKNOWN)
+    def convert_genre(data: str) -> TitleGenre | None:
+        return ShikimoriParser._GENRE_MAPPING.get(data)
 
     @staticmethod
-    def convert_category(data: str) -> TitleCategory:
-        return ShikimoriParser._CATEGORY_MAPPING.get(data, TitleCategory.UNKNOWN)
+    def convert_category(data: str) -> TitleCategory | None:
+        return ShikimoriParser._CATEGORY_MAPPING.get(data)
 
     # === Mappings ===
     _GENRE_MAPPING = {

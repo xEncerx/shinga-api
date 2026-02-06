@@ -34,7 +34,8 @@ class ShikimoriClient(BaseProvider):
 	"""
 
     BASE_URL = "https://shikimori.one/api/graphql/"
-    REQUESTS_PER_SECOND = 3.0
+    RATE_LIMIT_REQUESTS = 3
+    RATE_LIMIT_PERIOD = 1
 
     async def get_by_id(self, external_id: str) -> SourceTitleData | None:
         search_param = f'ids: "{external_id}"'
