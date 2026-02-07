@@ -14,6 +14,10 @@ class IUserTitleRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def get_user_title(self, user_id: int, title_id: int) -> UserTitleData | None:
+        raise NotImplementedError
+
+    @abstractmethod
     async def add_user_title(
         self,
         user_id: int,

@@ -9,13 +9,18 @@ from src.infrastructure.db.repositories import UserRepository
 from src.presentation.api.schemas.errors import *
 from src.domain.models.users import UserData
 
-__all__ = ["GetUserDep"]
+__all__ = ["GetUserDep", "GetOptionalUserDep"]
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"api/v1/auth/login/access-token",
 )
+optional_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"api/v1/auth/login/access-token",
+    auto_error=False,  # Don't raise error if token is missing
+)
 
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
+OptionalTokenDep = Annotated[str | None, Depends(optional_oauth2)]
 
 
 async def get_user(
@@ -40,5 +45,29 @@ async def get_user(
     return user
 
 
+async def get_optional_user(
+    token: OptionalTokenDep,
+    token_service: TokenServiceDep,
+    session: SessionDep,
+) -> UserData | None:
+    """Get user if token is provided and valid, otherwise return None."""
+    if token is None:
+        return None
+
+    try:
+        payload = token_service.verify_token(token)
+        user_id = payload.get("sub")
+        if user_id is None or user_id.isnumeric() is False:
+            return None
+    except (InvalidTokenError, ValidationError):
+        return None
+
+    user_repo = UserRepository(session)
+    user = await user_repo.get_by_id(int(user_id))
+
+    return user
+
+
 # === Dependency Annotations ===
 GetUserDep = Annotated[UserData, Depends(get_user)]
+GetOptionalUserDep = Annotated[UserData | None, Depends(get_optional_user)]

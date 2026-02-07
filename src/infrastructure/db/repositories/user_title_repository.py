@@ -24,6 +24,19 @@ class UserTitleRepository(IUserTitleRepository):
         result = await self._session.exec(stmt)
         return result.first() is not None
 
+    async def get_user_title(self, user_id: int, title_id: int) -> UserTitleData | None:
+        stmt = select(UserTitlesDBModel).where(
+            UserTitlesDBModel.user_id == user_id,
+            UserTitlesDBModel.title_id == title_id,
+        )
+        result = await self._session.exec(stmt)
+        db_model = result.first()
+
+        if db_model is None:
+            return None
+
+        return UserTitleMapper.to_domain(db_model)
+
     async def add_user_title(
         self,
         user_id: int,

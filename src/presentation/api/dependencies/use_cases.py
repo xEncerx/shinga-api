@@ -24,6 +24,7 @@ __all__ = [
     "RegisterUserUseCaseDep",
     "AddUserTitleUseCaseDep",
     "UpdateUserTitleUseCaseDep",
+    "GetTitleUseCaseDep",
 ]
 
 
@@ -72,6 +73,15 @@ async def get_update_user_title_use_case(
     )
 
 
+async def get_title_use_case(
+    session: SessionDep,
+) -> GetTitleUseCase:
+    return GetTitleUseCase(
+        user_title_repository=UserTitleRepository(session),
+        title_repository=TitleRepository(session),
+    )
+
+
 # === Dependencies Annotations ===
 AuthenticateUserUseCaseDep = Annotated[
     AuthenticateUserUseCase,
@@ -88,4 +98,8 @@ AddUserTitleUseCaseDep = Annotated[
 UpdateUserTitleUseCaseDep = Annotated[
     UpdateUserTitleUseCase,
     Depends(get_update_user_title_use_case),
+]
+GetTitleUseCaseDep = Annotated[
+    GetTitleUseCase,
+    Depends(get_title_use_case),
 ]

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Path
 
 from src.presentation.api.dependencies import (
     GetUserDep,
@@ -25,7 +25,8 @@ router = APIRouter(tags=["User Titles"])
     }
 )
 async def add_user_title_endpoint(
-    title_id: int,
+    title_id: int = Path(..., ge=1),
+    *,
     request: AddUserTitleRequest,
     user: GetUserDep,
     use_case: AddUserTitleUseCaseDep,
@@ -47,7 +48,8 @@ async def add_user_title_endpoint(
     }
 )
 async def update_user_title_endpoint(
-    title_id: int,
+    title_id: int = Path(..., ge=1),
+    *,
     request: UpdateUserTitleRequest,
     user: GetUserDep,
     use_case: UpdateUserTitleUseCaseDep,

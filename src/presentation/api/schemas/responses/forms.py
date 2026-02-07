@@ -1,5 +1,7 @@
-from typing import Generic, TypeVar
 from pydantic import BaseModel, Field
+from typing import TypeVar
+
+from .base import BaseContentResponse
 
 T = TypeVar("T")
 
@@ -15,13 +17,8 @@ __all__ = [
 ]
 
 
-class FormsResponse(BaseModel, Generic[T]):
-    """ """
-
-    content: list[T] = Field(
-        ...,
-        description="Forms content with dynamic values (genres, statuses, categories, etc.)",
-    )
+class FormsResponse(BaseContentResponse[list[T]]):
+    """Response for forms with list content."""
 
 
 # ===== Form Models =====
