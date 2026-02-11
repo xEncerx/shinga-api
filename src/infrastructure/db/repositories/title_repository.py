@@ -402,3 +402,28 @@ class TitleRepository(ITitleRepository):
         )
 
         return pagination, content
+
+    async def reset_stuck_in_progress_statuses(
+        self, stuck_threshold_minutes: int = 10 * 60
+    ) -> None:
+        cutoff_time = datetime.now(timezone.utc) - timedelta(
+            minutes=stuck_threshold_minutes
+        )
+
+        stmt = (
+            update(TitleRawDataDBModel)
+            .where(
+                and_(
+                    TitleRawDataDBModel.consolidation_status
+                    == ConsolidationStatus.IN_PROGRESS,
+                    TitleRawDataDBModel.last_verified_at < cutoff_time,
+                )
+            )
+            .values(
+                consolidation_status=ConsolidationStatus.PENDING,
+                consolidation_detail="Reset from stuck IN_PROGRESS status",
+            )
+        )
+
+        await self._session.exec(stmt)
+        await self._session.flush()

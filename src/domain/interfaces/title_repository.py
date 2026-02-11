@@ -158,3 +158,16 @@ class ITitleRepository(ABC):
             A tuple containing pagination info and a list of title data with optional user title data.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    async def reset_stuck_in_progress_statuses(
+        self,
+        stuck_threshold_minutes: int = 10 * 60,
+    ) -> None:
+        """
+        Reset IN_PROGRESS statuses that are stuck for too long back to PENDING.
+
+        Args:
+            stuck_threshold_minutes: Time threshold in minutes. Records in IN_PROGRESS longer than this will be reset to PENDING.
+        """
+        raise NotImplementedError

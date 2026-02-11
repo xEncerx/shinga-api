@@ -30,6 +30,13 @@ async def enqueue_consolidation_jobs_task(
     """
     async with context.state.session_factory() as session:
         title_repo = TitleRepository(session)
+
+        # Reset stuck IN_PROGRESS statuses before processing
+        async with session.begin():
+            await title_repo.reset_stuck_in_progress_statuses(
+                stuck_threshold_minutes=10 * 60  # 10 hours
+            )
+
         while True:
             async with session.begin():
                 raw_title_ids = await title_repo.get_unmapped_raw_titles(limit=100)
