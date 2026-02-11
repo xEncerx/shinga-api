@@ -32,8 +32,7 @@ class UserDBModel(SQLModel, table=True):
         default=UserRole.USER,
         description="Role assigned to the user",
     )
-    avatar_path: str | None = Field(
-        default=None,
+    avatar_path: str = Field(
         description="File path to the user's avatar image",
     )
     description: str | None = Field(

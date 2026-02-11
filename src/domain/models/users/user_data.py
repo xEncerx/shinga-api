@@ -2,6 +2,8 @@ from pydantic import BaseModel, EmailStr, Field
 
 from .enums import UserRole
 
+__all__ = ["UserData"]
+
 
 class UserData(BaseModel):
     id: int | None = Field(
@@ -17,9 +19,7 @@ class UserData(BaseModel):
     email: EmailStr
     hashed_password: str = Field(..., description="The hashed password of the user.")
 
-    avatar_path: str | None = Field(
-        default=None, description="The file path to the user's avatar image."
-    )
+    avatar_path: str = Field(description="The file path to the user's avatar image.")
 
     role: UserRole = Field(
         default=UserRole.USER, description="The role assigned to the user."

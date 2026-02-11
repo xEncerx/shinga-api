@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     COVER_PUBLIC_URL: str = "/static/covers/"
 
     PENDING_COVER_URL: str = "/static/covers/pending.webp"
+    DEFAULT_AVATAR_URL: str = "/static/avatars/default.webp"
 
     # Cover processing settings
     COVER_VARIANTS: dict[str, tuple[int, int]] = {

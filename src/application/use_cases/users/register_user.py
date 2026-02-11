@@ -7,6 +7,7 @@ from src.domain.interfaces import (
     IUserRepository,
 )
 from src.domain.errors import *
+from src.core import settings
 
 
 @dataclass
@@ -93,6 +94,7 @@ class RegisterUserUseCase:
                 username=username,
                 email=email,
                 hashed_password=hashed_password,
+                avatar_path=settings.DEFAULT_AVATAR_URL,
             ),
             google_id=google_id,
             yandex_id=yandex_id,
