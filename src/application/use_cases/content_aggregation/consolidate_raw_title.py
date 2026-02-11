@@ -73,9 +73,9 @@ class ConsolidateRawTitleUseCase:
         # 3. Merge or create title
         if candidate:
             # Match found = merge titles
-            merged_title = self._title_merger.merge(raw_title.title_data, candidate[0])
+            merged_title = self._title_merger.merge(raw_title.title_data, candidate)
             await self._title_repository.update_master_title(
-                master_title_id=candidate[1],
+                master_title_id=candidate.id,  # type: ignore
                 title_data=merged_title,
                 search_text=self._text_normalizer.normalize_multiple(
                     [
@@ -88,7 +88,7 @@ class ConsolidateRawTitleUseCase:
                 ),
                 data_quality_score=self._quality_scorer.score(merged_title),
             )
-            master_title_id = candidate[1]
+            master_title_id = candidate.id
         else:
             # No match found = create a new title
 
@@ -108,7 +108,7 @@ class ConsolidateRawTitleUseCase:
         # 4. Link raw title to master title
         await self._title_repository.link_raw_to_master(
             raw_title_id=raw_title_id,
-            master_title_id=master_title_id,
+            master_title_id=master_title_id,  # type: ignore
         )
         # 5. Update status to CONSOLIDATED
         await self._title_repository.update_consolidation_status(
@@ -118,7 +118,7 @@ class ConsolidateRawTitleUseCase:
 
         return ConsolidationResult(
             raw_title_id=raw_title_id,
-            master_title_id=master_title_id,
+            master_title_id=master_title_id,  # type: ignore
             external_id=raw_title.source_metadata.external_id,
             source=raw_title.source_metadata.source.name,
             is_new=is_new,
@@ -128,7 +128,7 @@ class ConsolidateRawTitleUseCase:
     async def _find_candidate(
         self,
         raw_title: SourceTitleData,
-    ) -> tuple[TitleData, int] | None:
+    ) -> TitleData | None:
         # Try definitive matchers first (100% confidence)
         if len(self._definitive_matchers) > 0:
             candidate = await self._try_definitive_matchers(raw_title)
@@ -143,25 +143,21 @@ class ConsolidateRawTitleUseCase:
 
     async def _try_definitive_matchers(
         self, raw_title: SourceTitleData
-    ) -> tuple[TitleData, int] | None:
+    ) -> TitleData | None:
         for matcher in self._definitive_matchers:
             candidates = await matcher.find_candidates(raw_title)
             if candidates:
                 return candidates[0]  # Return the first definitive match
         return None
 
-    async def _try_other_matchers(
-        self, raw_title: SourceTitleData
-    ) -> tuple[TitleData, int] | None:
+    async def _try_other_matchers(self, raw_title: SourceTitleData) -> TitleData | None:
         best_candidate = None
         highest_score = 0.0
 
         for matcher in self._other_matchers:
             candidates = await matcher.find_candidates(raw_title)
             for candidate in candidates:
-                score = self._similarity_scorer.score(
-                    raw_title.title_data, candidate[0]
-                )
+                score = self._similarity_scorer.score(raw_title.title_data, candidate)
                 if score > highest_score and score >= self.SIMILARITY_THRESHOLD:
                     highest_score = score
                     best_candidate = candidate

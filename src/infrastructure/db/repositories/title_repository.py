@@ -3,15 +3,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import update, select, func, text, and_
 from datetime import datetime, timedelta, timezone
 
-from src.domain.models.titles import (
-    SourceTitleData,
-    TitleData,
-    TitleCover,
+from src.infrastructure.db.models import (
+    TitleRawDataDBModel,
+    TitleDBModel,
+    UserTitlesDBModel,
 )
-from src.infrastructure.db.models import TitleRawDataDBModel, TitleDBModel
-from src.domain.models.services.enums import ConsolidationStatus
 from src.domain.interfaces import ITitleRepository
 from src.infrastructure.db.mappers import *
+from src.domain.models import *
 
 
 class TitleRepository(ITitleRepository):
@@ -217,22 +216,20 @@ class TitleRepository(ITitleRepository):
         await self._session.exec(stmt)
         await self._session.flush()
 
-    async def get_master_by_external_id(
-        self, **external_id_field
-    ) -> tuple[TitleData, int] | None:
+    async def get_master_by_external_id(self, **external_id_field) -> TitleData | None:
         stmt = select(TitleDBModel).filter_by(**external_id_field)
         result = await self._session.exec(stmt)
         master_title = result.one_or_none()
         if not master_title:
             return None
 
-        return (TitleDataMapper.to_domain(master_title), master_title.id)  # type: ignore
+        return TitleDataMapper.to_domain(master_title)
 
     async def get_master_by_name(
         self,
         normalized_name: str,
         limit: int = 20,
-    ) -> list[tuple[TitleData, int]]:
+    ) -> list[TitleData]:
         tokens = normalized_name.split()
         if not tokens:
             return []
@@ -254,9 +251,7 @@ class TitleRepository(ITitleRepository):
         )
 
         result = await self._session.exec(stmt)
-        return [
-            (TitleDataMapper.to_domain(i[0]), i[0].id) for i in result.all()
-        ]  # type: ignore
+        return [TitleDataMapper.to_domain(i[0]) for i in result.all()]
 
     async def update_master_title_cover(
         self,
@@ -270,3 +265,140 @@ class TitleRepository(ITitleRepository):
         )
         await self._session.exec(stmt)
         await self._session.flush()
+
+    _SORT_COLUMN_MAP = {
+        TitleSortBy.RATING: TitleDBModel.rating,
+        TitleSortBy.POPULARITY: TitleDBModel.popularity,
+        TitleSortBy.CHAPTERS: TitleDBModel.chapters,
+        TitleSortBy.VIEWS: TitleDBModel.views,
+        TitleSortBy.FAVORITES: TitleDBModel.favorites,
+        TitleSortBy.RELEASED_AT: TitleDBModel.released_at,
+    }
+
+    async def search_titles(
+        self,
+        query: str | None = None,
+        type: TitleType | None = None,
+        status: TitleStatus | None = None,
+        genres: list[str | TitleGenre] | None = None,
+        categories: list[str | TitleCategory] | None = None,
+        min_rating: float | None = None,
+        max_rating: float | None = None,
+        min_chapters: int | None = None,
+        max_chapters: int | None = None,
+        bookmark: TitleBookmark | None = None,
+        user_id: int | None = None,
+        sort_by: TitleSortBy = TitleSortBy.RATING,
+        order: SortingOrder = SortingOrder.DESC,
+        page: int = 1,
+        page_size: int = 27,
+    ) -> tuple[Pagination, list[tuple[TitleData, UserTitleData | None]]]:
+        where_conditions = []
+        tsquery = None
+
+        # 1. Build base query depending on whether user_id is provided
+        if user_id is not None:
+            # If user_id is provided, join with UserTitlesDBModel
+            stmt = select(TitleDBModel, UserTitlesDBModel).outerjoin(
+                UserTitlesDBModel,
+                and_(
+                    UserTitlesDBModel.title_id == TitleDBModel.id,  # type: ignore
+                    UserTitlesDBModel.user_id == user_id,  # type: ignore
+                ),
+            )
+        else:
+            # If no user_id, select only TitleDBModel
+            stmt = select(TitleDBModel)
+
+        # 2. If a title is provided, perform a full-text search
+        if query:
+            tokens = query.strip().split()
+            if tokens:
+                tokens[-1] += ":*"
+                tsquery_str = " & ".join(tokens)
+                tsquery = func.to_tsquery("simple", tsquery_str)  # type: ignore
+                where_conditions.append(
+                    TitleDBModel.search_vector.op("@@")(tsquery)  # type: ignore
+                )
+
+        # 3. Filters by type, status, genres, categories, bookmark
+        if type:
+            where_conditions.append(TitleDBModel.type == type)
+        if status:
+            where_conditions.append(TitleDBModel.status == status)
+        if genres:
+            where_conditions.append(TitleDBModel.genres.contains(genres))  # type: ignore
+        if categories:
+            where_conditions.append(
+                TitleDBModel.categories.contains(categories)  # type: ignore
+            )
+        if min_rating is not None:
+            where_conditions.append(TitleDBModel.rating >= min_rating)
+        if max_rating is not None:
+            where_conditions.append(TitleDBModel.rating <= max_rating)
+        if min_chapters is not None:
+            where_conditions.append(TitleDBModel.chapters >= min_chapters)
+        if max_chapters is not None:
+            where_conditions.append(TitleDBModel.chapters <= max_chapters)
+
+        if bookmark is not None and user_id is not None:
+            where_conditions.append(UserTitlesDBModel.bookmark == bookmark)  # type: ignore
+
+        # 4. Apply WHERE conditions
+        if where_conditions:
+            stmt = stmt.where(and_(*where_conditions))
+
+        # 5. Sorting
+        sort_column = self._SORT_COLUMN_MAP.get(sort_by, TitleDBModel.rating)
+        if tsquery is not None:
+            stmt = stmt.order_by(
+                func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
+            )
+        if order == SortingOrder.ASC:
+            stmt = stmt.order_by(sort_column.asc())
+        else:
+            stmt = stmt.order_by(sort_column.desc())
+
+        # 6. Pagination calculations
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_count = (await self._session.exec(count_stmt)).first() or 0
+        last_visible_page = (total_count + page_size - 1) // page_size
+        has_next_page = page < last_visible_page
+
+        offset = (page - 1) * page_size
+        stmt = stmt.offset(offset).limit(page_size)
+
+        # 7. Execute query
+        result = await self._session.exec(stmt)
+        rows = result.all()
+
+        content: list[tuple[TitleData, UserTitleData | None]] = []
+        for row in rows:
+            if user_id is not None:
+                # When user_id is provided, row is tuple (TitleDBModel, UserTitlesDBModel | None)
+                title_row, user_title_row = row
+                user_title_data = (
+                    UserTitleMapper.to_domain(user_title_row)  # type: ignore
+                    if user_title_row is not None
+                    else None
+                )
+            else:
+                # When no user_id, row is just TitleDBModel
+                title_row = row
+                user_title_data = None
+
+            title_data = TitleDataMapper.to_domain(title_row)  # type: ignore
+            content.append((title_data, user_title_data))
+
+        pagination = Pagination(
+            last_visible_page=last_visible_page,
+            has_next_page=has_next_page,
+            current_page=page,
+            items=PaginationItems(
+                count=len(content),
+                total=total_count,
+                per_page=page_size,
+            ),
+        )
+
+        return pagination, content

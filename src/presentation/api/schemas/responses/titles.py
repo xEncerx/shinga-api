@@ -8,6 +8,7 @@ from src.domain.models.titles.relations import (
     TitleBookmark,
 )
 from src.domain.models import TitleData, UserTitleData
+from .forms import TitleGenreForm, TitleCategoryForm
 from .base import BaseContentResponse
 
 __all__ = [
@@ -15,12 +16,16 @@ __all__ = [
     "UserTitleDataResponse",
     "TitleWithUserDataResponse",
     "TitleDetailResponse",
+    "TitleSearchResponse",
 ]
 
 
 class TitleResponse(BaseModel):
     """Response model for title data."""
 
+    id: int = Field(
+        description="Unique identifier of the title in the system",
+    )
     mal_id: int | None = Field(
         default=None,
         description="MyAnimeList ID, if applicable",
@@ -81,11 +86,11 @@ class TitleResponse(BaseModel):
         default=None,
         description="End date of the title",
     )
-    genres: list[str] = Field(
+    genres: list[TitleGenreForm] = Field(
         default=[],
         description="List of genres associated with the title",
     )
-    categories: list[str] = Field(
+    categories: list[TitleCategoryForm] = Field(
         default=[],
         description="List of categories associated with the title",
     )
@@ -106,6 +111,7 @@ class TitleResponse(BaseModel):
     def from_domain(cls, title: TitleData) -> "TitleResponse":
         """Create TitleResponse from domain model."""
         return cls(
+            id=title.id,  # type: ignore
             mal_id=title.mal_id,
             name_ru=title.name_ru,
             name_en=title.name_en,
@@ -122,8 +128,22 @@ class TitleResponse(BaseModel):
             scored_by=title.scored_by,
             released_at=title.released_at,
             ended_at=title.ended_at,
-            genres=[genre.name for genre in title.genres],
-            categories=[category.name for category in title.categories],
+            genres=[
+                TitleGenreForm(
+                    name=genre.name,
+                    ru=genre.ru,
+                    en=genre.en,
+                )
+                for genre in title.genres
+            ],
+            categories=[
+                TitleCategoryForm(
+                    name=category.name,
+                    ru=category.ru,
+                    en=category.en,
+                )
+                for category in title.categories
+            ],
             authors=title.authors,
             alt_names=title.alt_names,
             cover=title.cover,
@@ -181,3 +201,4 @@ class TitleWithUserDataResponse(BaseModel):
 # ===== Response Type Aliases =====
 
 TitleDetailResponse = BaseContentResponse[TitleWithUserDataResponse]
+TitleSearchResponse = BaseContentResponse[list[TitleWithUserDataResponse]]

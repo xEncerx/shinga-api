@@ -7,9 +7,7 @@ class MalIdMatcher(IBaseMatcher):
     def is_definitive(self) -> bool:
         return True
 
-    async def find_candidates(
-        self, raw_title: SourceTitleData
-    ) -> list[tuple[TitleData, int]]:
+    async def find_candidates(self, raw_title: SourceTitleData) -> list[TitleData]:
         mal_id = raw_title.title_data.mal_id
         if not mal_id:
             return []

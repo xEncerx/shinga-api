@@ -24,6 +24,7 @@ class TitleMerger:
             TitleData: Merged title data
         """
         return TitleData(
+            id=existing.id,  # Preserve existing ID
             mal_id=existing.mal_id or new.mal_id,
             name_ru=existing.name_ru or new.name_ru,
             name_en=existing.name_en or new.name_en,

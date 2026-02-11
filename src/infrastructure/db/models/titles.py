@@ -41,9 +41,9 @@ class TitleDBModel(SQLModel, table=True):
     rating: float = Field(default=0.0, ge=0.0, le=10.0, index=True)
     scored_by: int = Field(default=0, ge=0)
     chapters: int = Field(default=0, ge=0, index=True)
-    volumes: int = Field(default=0, ge=0, index=True)
-    views: int = Field(default=0, ge=0)
-    favorites: int = Field(default=0, ge=0)
+    volumes: int = Field(default=0, ge=0)
+    views: int = Field(default=0, ge=0, index=True)
+    favorites: int = Field(default=0, ge=0, index=True)
 
     # === Title themes ===
     genres: list[TitleGenre] = Field(

@@ -27,34 +27,34 @@ class TitleCover(BaseModel):
 
 
 class TitleType(str, Enum):
-    MANGA = "MANGA"
-    NOVEL = "NOVEL"
-    LIGHT_NOVEL = "LIGHT_NOVEL"
-    ONESHOT = "ONESHOT"
-    DOUJIN = "DOUJIN"
-    MANHWA = "MANHWA"
-    MANHUA = "MANHUA"
-    COMICS = "COMICS"
-    WEBTOON = "WEBTOON"
-    OTHER = "OTHER"
+    MANGA = "manga"
+    NOVEL = "novel"
+    LIGHT_NOVEL = "light_novel"
+    ONESHOT = "oneshot"
+    DOUJIN = "doujin"
+    MANHWA = "manhwa"
+    MANHUA = "manhua"
+    COMICS = "comics"
+    WEBTOON = "webtoon"
+    OTHER = "other"
 
 
 class TitleStatus(str, Enum):
-    ONGOING = "ONGOING"
-    FINISHED = "FINISHED"
-    DISCONTINUED = "DISCONTINUED"
-    LICENSED = "LICENSED"
-    FROZEN = "FROZEN"
-    ANONS = "ANONS"
-    UNKNOWN = "UNKNOWN"
+    ONGOING = "ongoing"
+    FINISHED = "finished"
+    DISCONTINUED = "discontinued"
+    LICENSED = "licensed"
+    FROZEN = "frozen"
+    ANONS = "anons"
+    UNKNOWN = "unknown"
 
 
 class TitleBookmark(str, Enum):
-    NOT_READING = "NOT_READING"
-    READING = "READING"
-    COMPLETED = "COMPLETED"
-    DROPPED = "DROPPED"
-    PLANNING = "PLANNING"
+    NOT_READING = "not_reading"
+    READING = "reading"
+    COMPLETED = "completed"
+    DROPPED = "dropped"
+    PLANNING = "planning"
 
 
 @dataclass(frozen=True)

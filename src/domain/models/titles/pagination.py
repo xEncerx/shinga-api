@@ -1,10 +1,6 @@
-from typing import Generic, TypeVar
 from pydantic import BaseModel
 
-__all__ = ["Pagination", "TitlePagination"]
-
-
-T = TypeVar("T")
+__all__ = ["Pagination", "PaginationItems"]
 
 
 class PaginationItems(BaseModel):
@@ -22,10 +18,3 @@ class Pagination(BaseModel):
     has_next_page: bool = False
     current_page: int = 0
     items: PaginationItems = PaginationItems()
-
-
-class TitlePagination(BaseModel, Generic[T]):
-    """Paginated response model for titles."""
-
-    pagination: Pagination = Pagination()
-    data: list[T] = []

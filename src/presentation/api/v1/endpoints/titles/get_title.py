@@ -20,7 +20,7 @@ async def get_title_by_id_endpoint(
     *,
     use_case: GetTitleUseCaseDep,
     user: GetOptionalUserDep,
-):
+) -> TitleDetailResponse:
     """
     Get title by ID with optional user-specific data.
 

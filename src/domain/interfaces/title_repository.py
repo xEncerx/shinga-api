@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.domain.models.titles import SourceTitleData, TitleData, TitleCover
-from src.domain.models.services.enums import ConsolidationStatus
+from src.domain.models import *
 
 
 class ITitleRepository(ABC):
@@ -75,9 +74,7 @@ class ITitleRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def get_master_by_external_id(
-        self, **external_id_field
-    ) -> tuple[TitleData, int] | None:
+    async def get_master_by_external_id(self, **external_id_field) -> TitleData | None:
         """Find a master title by its source and external ID."""
         raise NotImplementedError
 
@@ -86,7 +83,7 @@ class ITitleRepository(ABC):
         self,
         normalized_name: str,
         limit: int = 20,
-    ) -> list[tuple[TitleData, int]]:
+    ) -> list[TitleData]:
         """Find master titles by name. Uses normalized name and vector search"""
         raise NotImplementedError
 
@@ -114,4 +111,48 @@ class ITitleRepository(ABC):
         cover: TitleCover,
     ) -> None:
         """Update the cover image information for a master title."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def search_titles(
+        self,
+        query: str | None = None,
+        type: TitleType | None = None,
+        status: TitleStatus | None = None,
+        genres: list[str | TitleGenre] | None = None,
+        categories: list[str | TitleCategory] | None = None,
+        min_rating: float | None = None,
+        max_rating: float | None = None,
+        min_chapters: int | None = None,
+        max_chapters: int | None = None,
+        bookmark: TitleBookmark | None = None,
+        user_id: int | None = None,
+        sort_by: TitleSortBy = TitleSortBy.RATING,
+        order: SortingOrder = SortingOrder.DESC,
+        page: int = 1,
+        page_size: int = 27,
+    ) -> tuple[Pagination, list[tuple[TitleData, UserTitleData | None]]]:
+        """
+        Search titles with filters, sorting and pagination.
+
+        Args:
+            query: Normalized search query for fulltext search
+            type: Filter by title type
+            status: Filter by title status
+            genres: Filter by genres (any match)
+            categories: Filter by categories (any match)
+            min_rating: Filter by minimum rating
+            max_rating: Filter by maximum rating
+            min_chapters: Filter by minimum number of chapters
+            max_chapters: Filter by maximum number of chapters
+            bookmark: Filter by user's bookmark status
+            user_id: User ID for retrieving user-specific data and bookmark filter
+            sort_by: Field to sort by
+            order: Sorting order (asc/desc)
+            page: Page number (1-indexed)
+            page_size: Items per page
+
+        Returns:
+            A tuple containing pagination info and a list of title data with optional user title data.
+        """
         raise NotImplementedError

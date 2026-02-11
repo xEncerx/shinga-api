@@ -5,16 +5,8 @@ from fastapi import Depends
 
 from src.presentation.api.dependencies.security import TokenServiceDep
 from src.presentation.api.dependencies.database import SessionDep
-from src.presentation.api.dependencies.services import (
-    PasswordHasherDep,
-    PasswordValidatorDep,
-    UsernameValidatorDep,
-)
-from src.infrastructure.db.repositories import (
-    UserRepository,
-    UserTitleRepository,
-    TitleRepository,
-)
+from src.presentation.api.dependencies.services import *
+from src.infrastructure.db.repositories import *
 from src.application.use_cases import *
 from src.core import settings
 
@@ -25,6 +17,7 @@ __all__ = [
     "AddUserTitleUseCaseDep",
     "UpdateUserTitleUseCaseDep",
     "GetTitleUseCaseDep",
+    "SearchTitlesUseCaseDep",
 ]
 
 
@@ -82,6 +75,16 @@ async def get_title_use_case(
     )
 
 
+async def get_search_titles_use_case(
+    session: SessionDep,
+    text_normalizer: TextNormalizerDep,
+) -> SearchTitlesUseCase:
+    return SearchTitlesUseCase(
+        title_repository=TitleRepository(session),
+        text_normalizer=text_normalizer,
+    )
+
+
 # === Dependencies Annotations ===
 AuthenticateUserUseCaseDep = Annotated[
     AuthenticateUserUseCase,
@@ -102,4 +105,8 @@ UpdateUserTitleUseCaseDep = Annotated[
 GetTitleUseCaseDep = Annotated[
     GetTitleUseCase,
     Depends(get_title_use_case),
+]
+SearchTitlesUseCaseDep = Annotated[
+    SearchTitlesUseCase,
+    Depends(get_search_titles_use_case),
 ]

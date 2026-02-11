@@ -9,6 +9,7 @@ __all__ = ["TitleData"]
 class TitleData(BaseModel):
     """Pure domain model representing title information without any source-specific details."""
 
+    id: int | None = Field(default=None, description="Unique identifier for the title")
     mal_id: int | None = Field(
         default=None,
         description="MyAnimeList ID, if applicable",

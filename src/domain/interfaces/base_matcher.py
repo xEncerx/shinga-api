@@ -19,6 +19,6 @@ class IBaseMatcher(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def find_candidates(self, raw_title: SourceTitleData) -> list[tuple[TitleData, int]]:
+    async def find_candidates(self, raw_title: SourceTitleData) -> list[TitleData]:
         """Returns list of master_title_ids with db id that are potential matches"""
         raise NotImplementedError

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from src.domain.models.titles import (
-    TitlePagination,
     SourceTitleData,
     SourceMetadata,
     TitleCategory,
@@ -17,7 +16,6 @@ from src.domain.models import Source
 from .utils import tag_remover
 
 __all__ = [
-    "TitlePagination",
     "SourceTitleData",
     "SourceMetadata",
     "TitleCategory",

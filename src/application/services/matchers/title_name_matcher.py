@@ -11,7 +11,7 @@ class TitleNameMatcher(IBaseMatcher):
     async def find_candidates(
         self,
         raw_title: SourceTitleData,
-    ) -> list[tuple[TitleData, int]]:
+    ) -> list[TitleData]:
         td = raw_title.title_data
         normalized_name = TextNormalizer.normalize_multiple(
             [td.name_ru, td.name_en, *td.alt_names],

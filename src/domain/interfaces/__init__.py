@@ -6,6 +6,8 @@ from .password_service import IPasswordHasher
 from .validators import IDataValidator
 from .token_service import ITokenService
 from .user_title_repository import IUserTitleRepository
+from .email_service import IEmailService, IEmailTemplateRenderer, EmailMessage
+from .verification_code_storage import IVerificationCodeStorage
 
 __all__ = [
     "IFileStorage",
@@ -16,4 +18,5 @@ __all__ = [
     "IPasswordHasher",
     "IDataValidator",
     "ITokenService",
+    
 ]
