@@ -18,6 +18,9 @@ __all__ = [
     "UpdateUserTitleUseCaseDep",
     "GetTitleUseCaseDep",
     "SearchTitlesUseCaseDep",
+    "RequestPasswordResetUseCaseDep",
+    "ResetPasswordUseCaseDep",
+    "VerifyPasswordResetCodeUseCaseDep",
 ]
 
 
@@ -85,6 +88,43 @@ async def get_search_titles_use_case(
     )
 
 
+async def get_request_password_reset_use_case(
+    session: SessionDep,
+    code_storage: VerificationStorageDep,
+    template_renderer: TemplateRendererDep,
+    localization_service: LocalizationServiceDep,
+) -> RequestPasswordResetUseCase:
+    return RequestPasswordResetUseCase(
+        user_repository=UserRepository(session),
+        code_storage=code_storage,
+        template_renderer=template_renderer,
+        localization_service=localization_service,
+        code_expiration=timedelta(
+            minutes=settings.VERIFICATION_CODE_EXPIRATION_MINUTES
+        ),
+    )
+
+
+async def get_reset_password_use_case(
+    session: SessionDep,
+    code_storage: VerificationStorageDep,
+    password_hasher: PasswordHasherDep,
+    password_validator: PasswordValidatorDep,
+) -> ResetPasswordUseCase:
+    return ResetPasswordUseCase(
+        user_repository=UserRepository(session),
+        code_storage=code_storage,
+        password_hasher=password_hasher,
+        password_validator=password_validator,
+    )
+
+
+async def get_verify_password_reset_code_use_case(
+    code_storage: VerificationStorageDep,
+) -> VerifyPasswordResetCodeUseCase:
+    return VerifyPasswordResetCodeUseCase(code_storage=code_storage)
+
+
 # === Dependencies Annotations ===
 AuthenticateUserUseCaseDep = Annotated[
     AuthenticateUserUseCase,
@@ -109,4 +149,16 @@ GetTitleUseCaseDep = Annotated[
 SearchTitlesUseCaseDep = Annotated[
     SearchTitlesUseCase,
     Depends(get_search_titles_use_case),
+]
+RequestPasswordResetUseCaseDep = Annotated[
+    RequestPasswordResetUseCase,
+    Depends(get_request_password_reset_use_case),
+]
+ResetPasswordUseCaseDep = Annotated[
+    ResetPasswordUseCase,
+    Depends(get_reset_password_use_case),
+]
+VerifyPasswordResetCodeUseCaseDep = Annotated[
+    VerifyPasswordResetCodeUseCase,
+    Depends(get_verify_password_reset_code_use_case),
 ]

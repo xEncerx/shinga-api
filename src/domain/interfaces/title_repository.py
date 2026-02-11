@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 from src.domain.models import *
 
+__all__ = ["ITitleRepository"]
+
 
 class ITitleRepository(ABC):
     @abstractmethod

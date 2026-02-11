@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+__all__ = ["IDataValidator"]
+
 
 class IDataValidator(ABC):
     """Interface for data validation"""

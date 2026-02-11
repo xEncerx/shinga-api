@@ -16,9 +16,3 @@ class UserAlreadyExistsError(ConflictError):
 
 class UserNotFoundError(DomainError):
     """User not found."""
-
-    def __init__(self, identifier: str | None = None) -> None:
-        detail = "User %s not found"
-        if identifier:
-            detail = detail % f"with identifier '{identifier}'"
-        super().__init__([detail])

@@ -1,5 +1,5 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, func
+from sqlmodel import select, func, update
 
 from src.infrastructure.db.mappers import UserDataMapper
 from src.infrastructure.db.models import UserDBModel
@@ -56,3 +56,12 @@ class UserRepository(IUserRepository):
             return None
 
         return UserDataMapper.to_domain(user)
+
+    async def update_password(self, user_id: int, new_password_hash: str) -> None:
+        stmts = (
+            update(UserDBModel)
+            .where(UserDBModel.id == user_id)  # type: ignore
+            .values(hashed_password=new_password_hash)
+        )
+        await self._session.exec(stmts)
+        await self._session.flush()

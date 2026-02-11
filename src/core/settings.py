@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     FLAVOR: EnvFlavor = EnvFlavor.DEVELOPMENT
 
     # Application metadata
-    APP_NAME: str = "Shinga API"
+    APP_NAME: str = "Shinga"
     APP_VERSION: str = "0.1.0"
 
     # Api settings
@@ -36,6 +36,18 @@ class Settings(BaseSettings):
     # Redis settings
     REDIS_HOST: str
     REDIS_PORT: int = 6379
+
+    # Email settings (SMTP)
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    EMAIL_DOMAIN: str
+    SMTP_USE_TLS: bool = True
+    # Verification code settings
+    VERIFICATION_CODE_EXPIRATION_MINUTES: int = 15
+    # Email templates
+    EMAIL_TEMPLATES_DIR: str = "templates/email"
 
     # Security settings
     SECRET_KEY: str

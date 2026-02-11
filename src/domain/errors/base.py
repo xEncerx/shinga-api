@@ -11,9 +11,9 @@ class DomainError(Exception):
 
     def __init__(
         self,
-        details: list[str],
+        details: list[str] | str,
     ) -> None:
-        self.details = details
+        self.details = details if isinstance(details, list) else [details]
 
 
 class ConflictError(DomainError):

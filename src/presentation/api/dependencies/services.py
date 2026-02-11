@@ -8,8 +8,12 @@ from src.infrastructure.security import (
     BcryptPasswordHasher,
     JWTService,
 )
-from src.domain.interfaces import IPasswordHasher, IDataValidator, ITokenService
+from src.infrastructure.storage import RedisVerificationCodeStorage
+from src.infrastructure.localization import LocalizationService
+from src.infrastructure.email import EmailTemplateRenderer
 from src.domain.services import TextNormalizer
+from src.domain.interfaces import *
+from .database import RedisDep
 from src.core import settings
 
 __all__ = [
@@ -18,6 +22,9 @@ __all__ = [
     "UsernameValidatorDep",
     "TokenServiceDep",
     "TextNormalizerDep",
+    "TemplateRendererDep",
+    "VerificationStorageDep",
+    "LocalizationServiceDep",
 ]
 
 
@@ -46,9 +53,31 @@ def get_text_normalizer() -> TextNormalizer:
     return TextNormalizer()
 
 
+@lru_cache(1)
+def get_template_renderer() -> IEmailTemplateRenderer:
+    return EmailTemplateRenderer(templates_directory=settings.EMAIL_TEMPLATES_DIR)
+
+
+@lru_cache(1)
+def get_verification_storage(redis_client: RedisDep) -> IVerificationCodeStorage:
+    return RedisVerificationCodeStorage(redis_client)
+
+
+@lru_cache(1)
+def get_localization_service() -> ILocalizationService:
+    return LocalizationService()
+
+
 # === Dependencies Annotations ===
 PasswordHasherDep = Annotated[IPasswordHasher, Depends(get_password_hasher)]
 PasswordValidatorDep = Annotated[IDataValidator, Depends(get_password_validator)]
 UsernameValidatorDep = Annotated[IDataValidator, Depends(get_username_validator)]
 TokenServiceDep = Annotated[ITokenService, Depends(get_token_service)]
 TextNormalizerDep = Annotated[TextNormalizer, Depends(get_text_normalizer)]
+TemplateRendererDep = Annotated[EmailTemplateRenderer, Depends(get_template_renderer)]
+VerificationStorageDep = Annotated[
+    RedisVerificationCodeStorage, Depends(get_verification_storage)
+]
+LocalizationServiceDep = Annotated[
+    LocalizationService, Depends(get_localization_service)
+]

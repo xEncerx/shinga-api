@@ -1,3 +1,2 @@
-from .local import LocalFileStorage
-
-__all__ = ["LocalFileStorage"]
+from .local import *
+from .redis_verification_storage import *

@@ -3,6 +3,8 @@ import aiofiles
 
 from src.domain.interfaces import IFileStorage
 
+__all__ = ["LocalFileStorage"]
+
 
 class LocalFileStorage(IFileStorage):
     """A local file storage implementation using the filesystem."""

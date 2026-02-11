@@ -2,6 +2,7 @@ from taskiq import TaskiqEvents, TaskiqState
 
 from src.infrastructure.sources import SourceManager, AVAILABLE_SOURCES
 from src.infrastructure.db.session import async_session, engine
+from src.infrastructure.email import SMTPEmailService
 from src.infrastructure.storage import LocalFileStorage
 from src.infrastructure.network import MediaDownloader
 from src.infrastructure.media import ImageProcessor
@@ -29,6 +30,14 @@ async def startup(state: TaskiqState) -> None:
     state.image_processor = ImageProcessor(
         quality=settings.IMAGE_QUALITY,
         output_format=settings.BASE_IMAGE_FORMAT,
+    )
+    state.email_service = SMTPEmailService(
+        smtp_host=settings.SMTP_HOST,
+        smtp_port=settings.SMTP_PORT,
+        smtp_username=settings.SMTP_USERNAME,
+        smtp_password=settings.SMTP_PASSWORD,
+        email_domain=settings.EMAIL_DOMAIN,
+        use_tls=settings.SMTP_USE_TLS,
     )
 
     await state.media_downloader.create_session()

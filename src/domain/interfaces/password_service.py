@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+__all__ = ["IPasswordHasher"]
+
 
 class IPasswordHasher(ABC):
     """Interface for password hashing operations"""

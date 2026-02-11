@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 from src.domain.models.users import UserData
 
+__all__ = ["IUserRepository"]
+
 
 class IUserRepository(ABC):
     @abstractmethod
@@ -27,4 +29,9 @@ class IUserRepository(ABC):
     @abstractmethod
     async def get_by_username(self, username: str) -> UserData | None:
         """Retrieve a user by their username."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def update_password(self, user_id: int, new_password_hash: str) -> None:
+        """Update the password hash for a user."""
         raise NotImplementedError

@@ -5,6 +5,7 @@ from .consolidation_tasks import (
 )
 from .update_tasks import update_master_title_task, enqueue_update_jobs_task
 from .media_tasks import download_cover_task
+from .email_tasks import send_email_task
 
 __all__ = [
     "parse_source_page_task",
@@ -14,4 +15,5 @@ __all__ = [
     "update_master_title_task",
     "enqueue_update_jobs_task",
     "download_cover_task",
+    "send_email_task",
 ]

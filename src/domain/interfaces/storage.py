@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+__all__ = ["IFileStorage"]
+
 
 class IFileStorage(ABC):
     """Interface for file storage operations."""

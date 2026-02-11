@@ -7,6 +7,7 @@ from src.domain.models.users import (
     UserTitleDataUpdate,
 )
 
+__all__ = ["IUserTitleRepository"]
 
 class IUserTitleRepository(ABC):
     @abstractmethod

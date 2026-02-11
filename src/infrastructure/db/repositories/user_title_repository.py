@@ -1,5 +1,5 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select, func, update
+from sqlmodel import select, func, update, case
 
 from src.infrastructure.db.models import UserTitlesDBModel
 from src.infrastructure.db.mappers import UserTitleMapper
@@ -91,10 +91,6 @@ class UserTitleRepository(IUserTitleRepository):
     async def get_rating_statistics(self, user_id: int) -> RatingStatistics:
         stmt = (
             select(
-                func.count(
-                    case((UserTitlesDBModel.rating > 0, 1)),  # type: ignore
-                ).label("rated_count"),
-                func.avg(UserTitlesDBModel.rating).label("avg_rating"),
                 UserTitlesDBModel.rating,
                 func.count().label("count"),
             )
@@ -106,10 +102,19 @@ class UserTitleRepository(IUserTitleRepository):
         )
 
         result = await self._session.exec(stmt)
-        ratings: dict[int, int] = {row.rating: row.count for row in result.all()}  # type: ignore
+        rows = result.all()
+
+        ratings: dict[int, int] = {row.rating: row.count for row in rows}  # type: ignore
+
+        total_ratings = sum(ratings.values())
+        if total_ratings > 0:
+            weighted_sum = sum(rating * count for rating, count in ratings.items())
+            average_rating = weighted_sum / total_ratings
+        else:
+            average_rating = 0.0
 
         return RatingStatistics(
-            average_rating=result.first().avg_rating if result.first() else 0.0,  # type: ignore
-            ratings_count=result.first().rated_count if result.first() else 0,  # type: ignore
+            average_rating=round(average_rating, 1),
+            ratings_count=total_ratings,
             ratings_distribution=ratings,
         )
