@@ -28,7 +28,7 @@ class RatingStatistics(BaseModel):
     )
     ratings_distribution: dict[int, int] = Field(
         default_factory=lambda: {i: 0 for i in range(1, 11)},
-        description="A mapping of rating values (1-10) to their respective counts",
+        description="A mapping of rating to their respective counts",
     )
 
 

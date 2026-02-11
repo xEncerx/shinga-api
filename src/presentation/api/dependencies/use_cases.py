@@ -21,6 +21,7 @@ __all__ = [
     "RequestPasswordResetUseCaseDep",
     "ResetPasswordUseCaseDep",
     "VerifyPasswordResetCodeUseCaseDep",
+    "UserStatisticsUseCaseDep",
 ]
 
 
@@ -125,6 +126,12 @@ async def get_verify_password_reset_code_use_case(
     return VerifyPasswordResetCodeUseCase(code_storage=code_storage)
 
 
+async def get_user_statistics_use_case(session: SessionDep) -> GetUserStatisticsUseCase:
+    return GetUserStatisticsUseCase(
+        repository=UserTitleRepository(session),
+    )
+
+
 # === Dependencies Annotations ===
 AuthenticateUserUseCaseDep = Annotated[
     AuthenticateUserUseCase,
@@ -161,4 +168,8 @@ ResetPasswordUseCaseDep = Annotated[
 VerifyPasswordResetCodeUseCaseDep = Annotated[
     VerifyPasswordResetCodeUseCase,
     Depends(get_verify_password_reset_code_use_case),
+]
+UserStatisticsUseCaseDep = Annotated[
+    GetUserStatisticsUseCase,
+    Depends(get_user_statistics_use_case),
 ]
