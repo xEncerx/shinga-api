@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.domain.models.users import (
+from src.domain.models import (
     BookmarkStatistics,
     RatingStatistics,
     UserTitleData,
@@ -8,6 +8,7 @@ from src.domain.models.users import (
 )
 
 __all__ = ["IUserTitleRepository"]
+
 
 class IUserTitleRepository(ABC):
     @abstractmethod
