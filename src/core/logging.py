@@ -39,7 +39,7 @@ def setup_logger(flavor: EnvFlavor, level: str = "INFO") -> None:
         colorize=False if flavor == EnvFlavor.PRODUCTION else True,
         backtrace=True,
         diagnose=True,
-        serialize=True if flavor == EnvFlavor.PRODUCTION else False,
+        # serialize=True if flavor == EnvFlavor.PRODUCTION else False,
     )
 
     setup_fastapi_logging()

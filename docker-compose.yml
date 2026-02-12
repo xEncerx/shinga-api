@@ -133,4 +133,4 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${PWD}/storage
+      device: /var/www/shinga/storage
