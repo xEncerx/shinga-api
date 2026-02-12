@@ -37,7 +37,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT:-6379}
-      - STORAGE_BASE_PATH=/var/www/shinga/storage/
+      - STORAGE_BASE_PATH=${STORAGE_BASE_PATH:-/var/www/shinga/storage/}
     volumes:
       - storage-data:/var/www/shinga/storage
       - ./templates:/app/templates
@@ -67,7 +67,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT:-6379}
-      - STORAGE_BASE_PATH=/var/www/shinga/storage/
+      - STORAGE_BASE_PATH=${STORAGE_BASE_PATH:-/var/www/shinga/storage/}
     volumes:
       - storage-data:/var/www/shinga/storage
     depends_on:
@@ -112,7 +112,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=${REDIS_PORT:-6379}
-      - STORAGE_BASE_PATH=/var/www/shinga/storage/
+      - STORAGE_BASE_PATH=${STORAGE_BASE_PATH:-/var/www/shinga/storage/}
     volumes:
       - storage-data:/var/www/shinga/storage
     depends_on:
