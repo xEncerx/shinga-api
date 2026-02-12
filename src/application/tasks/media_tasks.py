@@ -26,7 +26,7 @@ RETRYABLE_EXCEPTIONS = (
 )
 
 
-@parsing_broker.task
+@parsing_broker.task(retry_on_error=True)
 async def download_cover_task(
     master_title_id: int,
     cover_url: str,
