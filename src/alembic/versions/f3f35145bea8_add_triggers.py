@@ -1,8 +1,8 @@
 """add_triggers
 
-Revision ID: c60c5b6c9622_add_triggers
-Revises: c60c5b6c9622
-Create Date: 2026-02-05 23:16:42.702777
+Revision ID: f3f35145bea8_add_triggers
+Revises: f3f35145bea8
+Create Date: 2026-02-12 16:10:34.876598
 
 """
 
@@ -11,8 +11,8 @@ from typing import Sequence, Union
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "c60c5b6c9622_add_triggers"
-down_revision: Union[str, Sequence[str], None] = "c60c5b6c9622"
+revision: str = "f3f35145bea8_add_triggers"
+down_revision: Union[str, Sequence[str], None] = "f3f35145bea8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
