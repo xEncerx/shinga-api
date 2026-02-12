@@ -39,7 +39,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - STORAGE_BASE_PATH=/var/www/shinga/storage/
     volumes:
-      - ./storage:/var/www/shinga/storage
+      - storage-data:/var/www/shinga/storage
       - ./templates:/app/templates
     depends_on:
       redis:
@@ -69,7 +69,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - STORAGE_BASE_PATH=/var/www/shinga/storage/
     volumes:
-      - ./storage:/var/www/shinga/storage
+      - storage-data:/var/www/shinga/storage
     depends_on:
       redis:
         condition: service_healthy
@@ -114,7 +114,7 @@ services:
       - REDIS_PORT=${REDIS_PORT:-6379}
       - STORAGE_BASE_PATH=/var/www/shinga/storage/
     volumes:
-      - ./storage:/var/www/shinga/storage
+      - storage-data:/var/www/shinga/storage
     depends_on:
       redis:
         condition: service_healthy
@@ -126,3 +126,11 @@ services:
 networks:
   shinga-network:
     driver: bridge
+
+volumes:
+  storage-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/storage

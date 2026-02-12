@@ -14,9 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=appuser:appuser . .
 
-RUN mkdir -p /var/www/shinga/storage/covers && \
-    chown -R appuser:appuser /var/www/shinga/storage
+COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 USER appuser
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "src.presentation.api.app:app", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
