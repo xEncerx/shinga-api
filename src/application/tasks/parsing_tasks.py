@@ -13,7 +13,7 @@ from src.infrastructure.sources import AVAILABLE_SOURCES, BaseProvider
 from src.infrastructure.sources.base_provider import SourceDetail
 from src.infrastructure.db.repositories import TitleRepository
 from src.application.use_cases import ParseSourcePageUseCase
-from src.infrastructure.tasks.broker import broker
+from src.infrastructure.tasks.broker import parsing_broker
 from src.domain.models.source import Source
 from src.core import logger
 
@@ -28,7 +28,7 @@ RETRYABLE_EXCEPTIONS = (
 )
 
 
-@broker.task(
+@parsing_broker.task(
     schedule=[
         {
             "cron": "0 2 * * 1,4",  # Mon=1, Thu=4
@@ -70,7 +70,7 @@ async def enqueue_parsing_jobs_task(
                 )  # type: ignore
 
 
-@broker.task(retry_on_error=True)
+@parsing_broker.task(retry_on_error=True)
 async def parse_source_page_task(
     source: Source,
     page: int,

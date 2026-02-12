@@ -4,11 +4,11 @@ from typing import Annotated
 
 from src.application.use_cases import UpdateMasterTitleUseCase
 from src.infrastructure.db.repositories import TitleRepository
-from src.infrastructure.tasks.broker import broker
+from src.infrastructure.tasks.broker import parsing_broker
 from src.core import logger
 
 
-@broker.task(
+@parsing_broker.task(
     schedule=[
         {
             "cron": "0 4 * * 0",  # Sun=0
@@ -45,7 +45,7 @@ async def enqueue_update_jobs_task(
                 break
 
 
-@broker.task
+@parsing_broker.task
 async def update_master_title_task(
     master_title_id: int,
     context: Annotated[Context, TaskiqDepends()],

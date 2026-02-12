@@ -1,7 +1,7 @@
 from taskiq import Context, TaskiqDepends
 from typing import Annotated
 
-from src.infrastructure.tasks.broker import broker
+from src.infrastructure.tasks.broker import email_broker
 from src.domain.interfaces import EmailMessage
 from src.domain.errors import EmailSendError
 from src.core import logger
@@ -10,7 +10,7 @@ from src.core import logger
 __all__ = ["send_email_task"]
 
 
-@broker.task(retry_on_error=True, max_retries=3)
+@email_broker.task(retry_on_error=True, max_retries=3)
 async def send_email_task(
     to: str,
     subject: str,

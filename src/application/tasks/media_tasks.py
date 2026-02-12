@@ -12,7 +12,7 @@ from typing import Annotated
 
 from src.infrastructure.db.repositories import TitleRepository
 from src.application.use_cases import ProcessImageUseCase
-from src.infrastructure.tasks.broker import broker
+from src.infrastructure.tasks.broker import parsing_broker
 from src.domain.models.source import Source
 from src.core import logger
 
@@ -26,7 +26,7 @@ RETRYABLE_EXCEPTIONS = (
 )
 
 
-@broker.task
+@parsing_broker.task
 async def download_cover_task(
     master_title_id: int,
     cover_url: str,

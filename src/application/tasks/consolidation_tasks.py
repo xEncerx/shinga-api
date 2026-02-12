@@ -7,11 +7,11 @@ from src.application.services.matchers import AVAILABLE_MATCHERS
 from src.application.use_cases import ConsolidateRawTitleUseCase
 from src.infrastructure.db.repositories import TitleRepository
 from src.domain.models.services import ConsolidationStatus
-from src.infrastructure.tasks.broker import broker
+from src.infrastructure.tasks.broker import parsing_broker
 from src.core import logger
 
 
-@broker.task(
+@parsing_broker.task(
     schedule=[
         {
             "cron": "0 3 * * 6",  # Sat=6
@@ -50,7 +50,7 @@ async def enqueue_consolidation_jobs_task(
                 break
 
 
-@broker.task
+@parsing_broker.task
 async def consolidate_raw_title_task(
     raw_title_id: int,
     context: Annotated[Context, TaskiqDepends()],

@@ -8,11 +8,11 @@ from src.infrastructure.network import MediaDownloader
 from src.infrastructure.media import ImageProcessor
 from src.core import settings, setup_logger
 from src.application.use_cases import *
-from .broker import broker
+from .broker import *
 
 
-@broker.on_event(TaskiqEvents.WORKER_STARTUP)
-async def startup(state: TaskiqState) -> None:
+@parsing_broker.on_event(TaskiqEvents.WORKER_STARTUP)
+async def parsing_startup(state: TaskiqState) -> None:
     setup_logger(settings.FLAVOR)
 
     state.session_factory = async_session
@@ -31,6 +31,15 @@ async def startup(state: TaskiqState) -> None:
         quality=settings.IMAGE_QUALITY,
         output_format=settings.BASE_IMAGE_FORMAT,
     )
+
+    await state.media_downloader.create_session()
+    await state.source_manager.initialize()
+
+
+@email_broker.on_event(TaskiqEvents.WORKER_STARTUP)
+async def email_startup(state: TaskiqState) -> None:
+    setup_logger(settings.FLAVOR)
+
     state.email_service = SMTPEmailService(
         smtp_host=settings.SMTP_HOST,
         smtp_port=settings.SMTP_PORT,
@@ -40,12 +49,9 @@ async def startup(state: TaskiqState) -> None:
         use_tls=settings.SMTP_USE_TLS,
     )
 
-    await state.media_downloader.create_session()
-    await state.source_manager.initialize()
 
-
-@broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
-async def shutdown(state: TaskiqState) -> None:
+@parsing_broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
+async def parsing_shutdown(state: TaskiqState) -> None:
     await state.media_downloader.close()
     await state.source_manager.dispose()
     await engine.dispose()
