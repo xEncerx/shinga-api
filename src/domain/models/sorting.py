@@ -15,3 +15,4 @@ class TitleSortBy(str, Enum):
     VIEWS = "views"
     FAVORITES = "favorites"
     RELEASED_AT = "released_at"
+    UPDATED_AT = "updated_at"

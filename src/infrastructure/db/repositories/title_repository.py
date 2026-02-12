@@ -273,6 +273,7 @@ class TitleRepository(ITitleRepository):
         TitleSortBy.VIEWS: TitleDBModel.views,
         TitleSortBy.FAVORITES: TitleDBModel.favorites,
         TitleSortBy.RELEASED_AT: TitleDBModel.released_at,
+        TitleSortBy.UPDATED_AT: UserTitlesDBModel.updated_at,
     }
 
     async def search_titles(
@@ -354,10 +355,15 @@ class TitleRepository(ITitleRepository):
             stmt = stmt.order_by(
                 func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
             )
+
+        # If sorting by updated_at but we don't have user-specific data, sort by released_at instead
+        if sort_column == TitleSortBy.UPDATED_AT and user_id is None:
+            sort_column = TitleDBModel.released_at
+
         if order == SortingOrder.ASC:
-            stmt = stmt.order_by(sort_column.asc())
+            stmt = stmt.order_by(sort_column.asc())  # type: ignore
         else:
-            stmt = stmt.order_by(sort_column.desc())
+            stmt = stmt.order_by(sort_column.desc())  # type: ignore
 
         # 6. Pagination calculations
         count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -369,6 +375,8 @@ class TitleRepository(ITitleRepository):
         stmt = stmt.offset(offset).limit(page_size)
 
         # 7. Execute query
+        print(stmt)
+
         result = await self._session.exec(stmt)
         rows = result.all()
 
