@@ -12,6 +12,17 @@ services:
     networks:
       - shinga-network
 
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shinga-migrations
+    command: alembic upgrade head
+    env_file:
+      - .env
+    networks:
+      - shinga-network
+
   api:
     build:
       context: .
@@ -33,6 +44,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
       interval: 30s
@@ -60,6 +73,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     networks:
       - shinga-network
 
@@ -80,6 +95,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     networks:
       - shinga-network
 
@@ -101,6 +118,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     networks:
       - shinga-network
 
