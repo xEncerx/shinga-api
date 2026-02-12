@@ -9,7 +9,9 @@ from src.presentation.api.schemas.errors import BaseAPIException
 from src.infrastructure.tasks import email_broker
 from src.domain.models.settings import EnvFlavor
 from src.presentation.api.middleware import *
-from src.core import settings
+from src.core import settings, setup_logger
+
+setup_logger(settings.FLAVOR)
 
 
 async def lifespan(_: FastAPI):

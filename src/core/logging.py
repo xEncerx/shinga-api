@@ -14,7 +14,14 @@ class InterceptHandler(logging.Handler):
 
 
 def setup_fastapi_logging() -> None:
-    uvicorn_loggers = ["uvicorn", "uvicorn.error", "uvicorn.access"]
+    # Intercept all uvicorn-related loggers including new ones
+    uvicorn_loggers = [
+        "uvicorn",
+        "uvicorn.error",
+        "uvicorn.access",
+        "uvicorn.asgi",
+        "fastapi",
+    ]
     for log_name in uvicorn_loggers:
         logging_logger = logging.getLogger(log_name)
         logging_logger.handlers = [InterceptHandler()]
@@ -33,9 +40,17 @@ def setup_logger(flavor: EnvFlavor, level: str = "INFO") -> None:
     """Sets up the logging configuration for the application."""
     logger.remove()  # Remove default logger
 
+    log_format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+        "<level>{level: <8}</level> | "
+        # "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+        "<level>{message}</level>"
+    )
+
     logger.add(
         sys.stderr,
         level=level,
+        format=log_format,
         colorize=False if flavor == EnvFlavor.PRODUCTION else True,
         backtrace=True,
         diagnose=True,
