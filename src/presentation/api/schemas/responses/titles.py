@@ -9,7 +9,7 @@ from src.domain.models.titles.relations import (
 )
 from src.domain.models import TitleData, UserTitleData
 from .forms import TitleGenreForm, TitleCategoryForm
-from .base import BaseContentResponse
+from .base import BaseContentResponse, PaginatedContentResponse
 
 __all__ = [
     "TitleResponse",
@@ -201,4 +201,4 @@ class TitleWithUserDataResponse(BaseModel):
 # ===== Response Type Aliases =====
 
 TitleDetailResponse = BaseContentResponse[TitleWithUserDataResponse]
-TitleSearchResponse = BaseContentResponse[list[TitleWithUserDataResponse]]
+TitleSearchResponse = PaginatedContentResponse[list[TitleWithUserDataResponse]]

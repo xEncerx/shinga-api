@@ -5,11 +5,12 @@ from src.presentation.api.schemas.responses import (
     TitleWithUserDataResponse,
     TitleResponse,
     UserTitleDataResponse,
+    PaginationResponse,
+    PaginationItemsResponse,
 )
 from src.presentation.api.dependencies.use_cases import SearchTitlesUseCaseDep
 from src.presentation.api.schemas.requests import TitleSearchRequest
 from src.presentation.api.dependencies import GetOptionalUserDep
-from time import time
 
 router = APIRouter(prefix="/search", tags=["Search Titles"])
 
@@ -20,7 +21,6 @@ async def search_titles_endpoint(
     user: GetOptionalUserDep,
     use_case: SearchTitlesUseCaseDep,
 ) -> TitleSearchResponse:
-    start = time()
     result = await use_case.execute(
         query=request.query,
         type=request.type,
@@ -38,10 +38,18 @@ async def search_titles_endpoint(
         page=request.page,
         page_size=request.page_size,
     )
-    end = time()
-    print(f"Search titles executed in {end - start} seconds")
 
     return TitleSearchResponse(
+        pagination=PaginationResponse(
+            last_visible_page=result.pagination.last_visible_page,
+            has_next_page=result.pagination.has_next_page,
+            current_page=result.pagination.current_page,
+            items=PaginationItemsResponse(
+                count=result.pagination.items.count,
+                total=result.pagination.items.total,
+                per_page=result.pagination.items.per_page,
+            ),
+        ),
         content=[
             TitleWithUserDataResponse(
                 title=TitleResponse.from_domain(item.title),
@@ -52,5 +60,5 @@ async def search_titles_endpoint(
                 ),
             )
             for item in result.content
-        ]
+        ],
     )
