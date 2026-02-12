@@ -30,6 +30,9 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     lifespan=lifespan,  # type: ignore
+    openapi_url=None if settings.FLAVOR == EnvFlavor.PRODUCTION else "/openapi.json",
+    docs_url=None if settings.FLAVOR == EnvFlavor.PRODUCTION else "/docs",
+    redoc_url=None if settings.FLAVOR == EnvFlavor.PRODUCTION else "/redoc",
 )
 
 
