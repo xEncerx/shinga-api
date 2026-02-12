@@ -375,8 +375,6 @@ class TitleRepository(ITitleRepository):
         stmt = stmt.offset(offset).limit(page_size)
 
         # 7. Execute query
-        print(stmt)
-
         result = await self._session.exec(stmt)
         rows = result.all()
 
