@@ -39,10 +39,10 @@ async def enqueue_update_jobs_task(
                     master_title_id=master_title_id,
                 )  # type: ignore
 
-            cursor_id = master_title_ids[-1]
-
             if len(master_title_ids) < 100:
                 break
+
+            cursor_id = master_title_ids[-1]
 
 
 @parsing_broker.task
