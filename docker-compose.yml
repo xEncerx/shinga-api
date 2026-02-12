@@ -1,0 +1,109 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    container_name: shinga-redis
+    restart: unless-stopped
+    command: redis-server --port ${REDIS_PORT:-6379}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "${REDIS_PORT:-6379}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shinga-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shinga-api
+    restart: unless-stopped
+    command: gunicorn src.presentation.api.app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - STORAGE_BASE_PATH=/var/www/shinga/storage/
+    volumes:
+      - ./storage:/var/www/shinga/storage
+      - ./templates:/app/templates
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - shinga-network
+
+  parsing-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shinga-parsing-worker
+    restart: unless-stopped
+    command: taskiq worker src.infrastructure.tasks:parsing_broker
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - STORAGE_BASE_PATH=/var/www/shinga/storage/
+    volumes:
+      - ./storage:/var/www/shinga/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - shinga-network
+
+  email-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shinga-email-worker
+    restart: unless-stopped
+    command: taskiq worker src.infrastructure.tasks:email_broker
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    volumes:
+      - ./templates:/app/templates
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - shinga-network
+
+  parsing-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shinga-parsing-scheduler
+    restart: unless-stopped
+    command: taskiq scheduler src.infrastructure.tasks:parsing_scheduler
+    env_file:
+      - .env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - STORAGE_BASE_PATH=/var/www/shinga/storage/
+    volumes:
+      - ./storage:/var/www/shinga/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - shinga-network
+
+networks:
+  shinga-network:
+    driver: bridge
