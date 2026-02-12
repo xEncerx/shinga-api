@@ -3,9 +3,9 @@ from taskiq import TaskiqScheduler
 
 from .broker import parsing_broker
 
-__all__ = ["scheduler"]
+__all__ = ["parsing_scheduler"]
 
-scheduler = TaskiqScheduler(
+parsing_scheduler = TaskiqScheduler(
     broker=parsing_broker,
     sources=[LabelScheduleSource(parsing_broker)],
 )
