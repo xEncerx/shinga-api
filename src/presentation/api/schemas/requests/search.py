@@ -81,25 +81,27 @@ class TitleSearchRequest(BaseModel):
     @field_validator("genres", mode="before")
     @classmethod
     def parse_genres(cls, v):
-        """Convert genre names to TitleGenre enum values."""
+        """Validate genres."""
         if v is None:
             return None
         if isinstance(v, list):
             try:
                 return [TitleGenre[genre.upper()].name for genre in v if genre]
-            except KeyError:
-                pass
+            except KeyError as e:
+                raise ValueError(f"Invalid genre: {e.args[0]}")
         return v
 
     @field_validator("categories", mode="before")
     @classmethod
     def parse_categories(cls, v):
-        """Convert category names to TitleCategory enum values."""
+        """Validate categories."""
         if v is None:
             return None
         if isinstance(v, list):
             try:
-                return [TitleCategory[category.upper()].name for category in v if category]
-            except KeyError:
-                pass
+                return [
+                    TitleCategory[category.upper()].name for category in v if category
+                ]
+            except KeyError as e:
+                raise ValueError(f"Invalid category: {e.args[0]}")
         return v
