@@ -9,6 +9,7 @@ class SortingOrder(str, Enum):
 
 
 class TitleSortBy(str, Enum):
+    ID = "id"
     RATING = "rating"
     POPULARITY = "popularity"
     CHAPTERS = "chapters"

@@ -267,6 +267,7 @@ class TitleRepository(ITitleRepository):
         await self._session.flush()
 
     _SORT_COLUMN_MAP = {
+        TitleSortBy.ID: TitleDBModel.id,
         TitleSortBy.RATING: TitleDBModel.rating,
         TitleSortBy.POPULARITY: TitleDBModel.popularity,
         TitleSortBy.CHAPTERS: TitleDBModel.chapters,
