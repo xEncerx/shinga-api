@@ -9,6 +9,9 @@ __all__ = ["setup_logger", "logger"]
 
 class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
+        if "/health/simple" in record.getMessage():
+            return  # Skip logging health check requests
+
         logger_opt = logger.opt(depth=6, exception=record.exc_info)
         logger_opt.log(record.levelname, record.getMessage())
 

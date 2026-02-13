@@ -5,7 +5,7 @@ from src.core import settings
 router = APIRouter(prefix="/health", tags=["Health Check"])
 
 
-@router.get("/")
+@router.get("/simple")
 async def health_check_endpoint():
     return {
         "status": "healthy",
