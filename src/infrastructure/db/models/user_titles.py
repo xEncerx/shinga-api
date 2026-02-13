@@ -31,6 +31,12 @@ class UserTitlesDBModel(SQLModel, table=True):
 
     is_favorite: bool = Field(default=False, index=True)
 
+    note: str | None = Field(
+        default=None,
+        max_length=200,
+        description="User's personal note about the title",
+    )
+
     updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),

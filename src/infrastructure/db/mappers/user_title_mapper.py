@@ -18,6 +18,7 @@ class UserTitleMapper:
             current_url=data.current_url,
             bookmark=data.bookmark,
             is_favorite=data.is_favorite,
+            note=data.note,
             extended_data=data.extended_data,
         )
 
@@ -28,5 +29,6 @@ class UserTitleMapper:
             current_url=data.current_url,
             bookmark=data.bookmark,
             is_favorite=data.is_favorite,
+            note=data.note,
             extended_data=data.extended_data,
         )

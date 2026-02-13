@@ -171,6 +171,11 @@ class UserTitleDataResponse(BaseModel):
         default=False,
         description="Indicates if the title is marked as a favorite by the user",
     )
+    note: str | None = Field(
+        default=None,
+        max_length=200,
+        description="User's personal note about the title",
+    )
     extended_data: dict | None = Field(
         default=None,
         description="Additional specific data that doesn't fit into predefined fields",
@@ -184,6 +189,7 @@ class UserTitleDataResponse(BaseModel):
             current_url=user_data.current_url,
             bookmark=user_data.bookmark,
             is_favorite=user_data.is_favorite,
+            note=user_data.note,
             extended_data=user_data.extended_data,
         )
 

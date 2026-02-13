@@ -31,3 +31,9 @@ class UpdateUserTitleRequest(BaseModel):
         default=None,
         description="Indicates if the title is marked as a favorite by the user.",
     )
+
+    note: str | None = Field(
+        default=None,
+        max_length=200,
+        description="User's personal note about the title",
+    )

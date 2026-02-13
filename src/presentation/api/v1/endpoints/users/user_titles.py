@@ -66,6 +66,7 @@ async def update_user_title_endpoint(
             current_url=str(request.current_url) if request.current_url else None,
             bookmark=request.bookmark,
             is_favorite=request.is_favorite,
+            note=request.note,
             extended_data=None,
         ),
     )
