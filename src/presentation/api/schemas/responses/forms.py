@@ -10,10 +10,12 @@ __all__ = [
     "TitleCategoriesResponse",
     "TitleStatusesResponse",
     "TitleTypesResponse",
+    "TitleBookmarksResponse",
     "TitleGenreForm",
     "TitleCategoryForm",
     "TitleStatusForm",
     "TitleTypeForm",
+    "TitleBookmarkForm",
 ]
 
 
@@ -52,9 +54,16 @@ class TitleTypeForm(BaseModel):
     name: str = Field(..., description="Type name in System")
 
 
+class TitleBookmarkForm(BaseModel):
+    """Bookmark form model"""
+
+    name: str = Field(..., description="Bookmark name in System")
+
+
 # ===== Response Type Aliases =====
 
 TitleGenresResponse = FormsResponse[TitleGenreForm]
 TitleCategoriesResponse = FormsResponse[TitleCategoryForm]
 TitleStatusesResponse = FormsResponse[TitleStatusForm]
 TitleTypesResponse = FormsResponse[TitleTypeForm]
+TitleBookmarksResponse = FormsResponse[TitleBookmarkForm]

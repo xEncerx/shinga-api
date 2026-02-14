@@ -1,6 +1,12 @@
 from fastapi import APIRouter
 
-from src.domain.models.titles import TitleGenre, TitleCategory, TitleType, TitleStatus
+from src.domain.models.titles import (
+    TitleGenre,
+    TitleCategory,
+    TitleType,
+    TitleStatus,
+    TitleBookmark,
+)
 from src.presentation.api.schemas.responses.forms import *
 
 router = APIRouter(prefix="/titles", tags=["Titles Forms"])
@@ -64,3 +70,17 @@ async def get_types_endpoint() -> TitleTypesResponse:
         ]
     )
     return types
+
+
+@router.get("/bookmarks")
+async def get_bookmarks_endpoint() -> TitleBookmarksResponse:
+    """Get list of available title bookmarks"""
+    bookmarks = TitleBookmarksResponse(
+        content=[
+            TitleBookmarkForm(
+                name=bookmark.name,
+            )
+            for bookmark in TitleBookmark
+        ]
+    )
+    return bookmarks
