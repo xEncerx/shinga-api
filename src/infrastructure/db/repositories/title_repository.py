@@ -2,6 +2,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import update, select, func, text, and_
 from datetime import datetime, timedelta, timezone
+from contextlib import asynccontextmanager
 
 from src.infrastructure.db.models import (
     TitleRawDataDBModel,
@@ -17,30 +18,52 @@ class TitleRepository(ITitleRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    @asynccontextmanager
+    async def _advisory_lock(self, source: Source, external_id: str):
+        """
+        Acquire an advisory lock based on source and external_id.
+        This ensures only one worker can upsert a specific title at a time.
+        """
+        key_string = f"{source.value}:{external_id}"
+        key_hash = hash(key_string) % (2**31)
+
+        try:
+            await self._session.exec(
+                text("SELECT pg_advisory_xact_lock(:key)"),  # type: ignore
+                params={"key": key_hash},
+            )  # type: ignore
+            yield
+        finally:
+            pass
+
     async def upsert_raw_title(
         self,
         raw_title: SourceTitleData,
     ) -> int | None:
-        insert_values = SourceTitleDataMapper.to_db_dict(raw_title)
+        async with self._advisory_lock(
+            raw_title.source_metadata.source,
+            raw_title.source_metadata.external_id,
+        ):
+            insert_values = SourceTitleDataMapper.to_db_dict(raw_title)
 
-        stmt = pg_insert(TitleRawDataDBModel).values(**insert_values)
-        stmt = stmt.on_conflict_do_update(
-            constraint="uq_source_external_id",
-            set_={
-                "is_deleted": stmt.excluded.is_deleted,
-                "raw_data": stmt.excluded.raw_data,
-                "extended_data": stmt.excluded.extended_data,
-                "source_url": stmt.excluded.source_url,
-                "last_verified_at": stmt.excluded.last_verified_at,
-            },
-        ).returning(
-            TitleRawDataDBModel.id  # type: ignore
-        )  # type: ignore
+            stmt = pg_insert(TitleRawDataDBModel).values(**insert_values)
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_source_external_id",
+                set_={
+                    "is_deleted": stmt.excluded.is_deleted,
+                    "raw_data": stmt.excluded.raw_data,
+                    "extended_data": stmt.excluded.extended_data,
+                    "source_url": stmt.excluded.source_url,
+                    "last_verified_at": stmt.excluded.last_verified_at,
+                },
+            ).returning(
+                TitleRawDataDBModel.id  # type: ignore
+            )  # type: ignore
 
-        result = await self._session.exec(stmt)
-        await self._session.flush()
+            result = await self._session.exec(stmt)
+            await self._session.flush()
 
-        return result.scalar_one_or_none()
+            return result.scalar_one_or_none()
 
     async def get_raw_title(self, raw_title_id: int) -> SourceTitleData | None:
         result = await self._session.get(TitleRawDataDBModel, raw_title_id)
