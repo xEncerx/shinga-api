@@ -177,6 +177,7 @@ class AsyncHttpClient:
                 timeout=self._timeout,
                 proxy=self._proxy,
                 connector=TCPConnector(ssl=not self._disable_ssl),
+                trust_env=True,  # Allow using environment variables for proxy settings
             )
 
             if self._disable_ssl:
