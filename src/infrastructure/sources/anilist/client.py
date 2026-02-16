@@ -104,7 +104,7 @@ class AniListClient(BaseProvider):
     BASE_URL = "https://graphql.anilist.co"
 
     RATE_LIMIT_REQUESTS = 1
-    RATE_LIMIT_PERIOD = 3
+    RATE_LIMIT_PERIOD = 4
 
     async def get_by_id(self, external_id: str) -> SourceTitleData | None:
         async with self.post(
