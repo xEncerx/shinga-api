@@ -52,12 +52,15 @@ async def enqueue_parsing_jobs_task(
     # Collect metadata for all sources
     sources_info: list[SourceDetail] = []
     for source in AVAILABLE_SOURCES.keys():
-        source_client: BaseProvider = context.state.source_manager.get_provider(source)
-        source_detail = await source_client.get_source_detail()
-        sources_info.append(source_detail)
-        logger.info(
-            f"Source '{source.name}' has {source_detail.total_pages} pages with {source_detail.items_per_page} items per page"
-        )
+        try:
+            source_client: BaseProvider = context.state.source_manager.get_provider(source)
+            source_detail = await source_client.get_source_detail()
+            sources_info.append(source_detail)
+            logger.info(
+                f"Source '{source.name}' has {source_detail.total_pages} pages with {source_detail.items_per_page} items per page"
+            )
+        except Exception as e:
+            logger.error(f"Failed to get source detail for source '{source.name}': {e}")
 
     # Find maximum number of pages across all sources
     max_pages = max(info.total_pages for info in sources_info)
