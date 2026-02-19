@@ -32,7 +32,7 @@ class MalClient(BaseProvider):
             return MalParser.parse_page(data)
 
     async def get_source_detail(self) -> SourceDetail:
-        async with self.get("manga/1") as response:
+        async with self.get("manga/?page=1") as response:
             data = await response.json()
             if "data" not in data:
                 raise ValueError("Unable to fetch source detail from MAL API.")
