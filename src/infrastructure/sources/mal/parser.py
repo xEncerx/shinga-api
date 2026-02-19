@@ -39,7 +39,7 @@ class MalParser(BaseParser):
             ],
             categories=[
                 category
-                for category_name in data["categories"]
+                for category_name in data["themes"]
                 if (category := MalParser.convert_category(category_name["name"]))
             ],
             authors=[author["name"] for author in data["authors"]],
