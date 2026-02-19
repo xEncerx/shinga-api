@@ -56,7 +56,7 @@ async def enqueue_parsing_jobs_task(
         source_detail = await source_client.get_source_detail()
         sources_info.append(source_detail)
         logger.info(
-            f"Source '{source}' has {source_detail.total_pages} pages with {source_detail.items_per_page} items per page"
+            f"Source '{source.name}' has {source_detail.total_pages} pages with {source_detail.items_per_page} items per page"
         )
 
     # Find maximum number of pages across all sources
