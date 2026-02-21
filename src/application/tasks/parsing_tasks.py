@@ -53,14 +53,21 @@ async def enqueue_parsing_jobs_task(
     sources_info: list[SourceDetail] = []
     for source in AVAILABLE_SOURCES.keys():
         try:
-            source_client: BaseProvider = context.state.source_manager.get_provider(source)
+            source_client: BaseProvider = context.state.source_manager.get_provider(
+                source
+            )
             source_detail = await source_client.get_source_detail()
             sources_info.append(source_detail)
             logger.info(
-                f"Source '{source.name}' has {source_detail.total_pages} pages with {source_detail.items_per_page} items per page"
+                "Source '{}' has {} pages with {} items per page",
+                source.name,
+                source_detail.total_pages,
+                source_detail.items_per_page,
             )
         except Exception as e:
-            logger.error(f"Failed to get source detail for source '{source.name}': {e}")
+            logger.error(
+                "Failed to get source detail for source '{}': {}", source.name, e
+            )
 
     # Find maximum number of pages across all sources
     max_pages = max(info.total_pages for info in sources_info)
@@ -100,20 +107,33 @@ async def parse_source_page_task(
                 result = await use_case.execute(page=page, limit=page_size)
 
         logger.info(
-            f"Parsed page {page}: {result.upserted}/{page_size} titles from {source.name}"
+            "Parsed page {}: {}/{} titles from {}",
+            page,
+            result.upserted,
+            page_size,
+            source.name,
         )
         if len(result.errors) > 0:
             for err in result.errors:
                 logger.error(
-                    f"Error parsing title on page {page} from {source.name}: {err}"
+                    "Error parsing title on page {} from {}: {}",
+                    page,
+                    source.name,
+                    err,
                 )
     except RETRYABLE_EXCEPTIONS as e:
         logger.warning(
-            f"Retryable error while parsing page {page} from source {source.name}: {e}",
+            "Retryable error while parsing page {} from source {}: {}",
+            page,
+            source.name,
+            e,
         )
         raise
     except Exception as e:
         logger.error(
-            f"Unexpected error while parsing page {page} from source {source.name}: {e}",
+            "Unexpected error while parsing page {} from source {}: {}",
+            page,
+            source.name,
+            e,
         )
         return None

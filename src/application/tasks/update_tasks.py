@@ -61,9 +61,11 @@ async def update_master_title_task(
             async with session.begin():
                 await use_case.execute(master_title_id)
 
-        logger.info(f"Updated master title ID={master_title_id} successfully.")
+        logger.info("Updated master title ID={} successfully.", master_title_id)
     except Exception as e:
         logger.error(
-            f"Unexpected error updating master title ID={master_title_id}: {e}"
+            "Unexpected error updating master title ID={}: {}",
+            master_title_id,
+            e,
         )
         return None

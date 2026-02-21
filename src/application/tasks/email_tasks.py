@@ -40,11 +40,11 @@ async def send_email_task(
 
         await email_service.send_email(message)
 
-        logger.info(f"Email sent successfully to {to} with subject: {subject}")
+        logger.info("Email sent successfully to {} with subject: {}", to, subject)
 
     except EmailSendError as e:
-        logger.error(f"Failed to send email to {to}: {e}")
+        logger.error("Failed to send email to {}: {}", to, e)
         raise  # Re-raise to trigger retry
     except Exception as e:
-        logger.error(f"Unexpected error sending email to {to}: {e}")
+        logger.error("Unexpected error sending email to {}: {}", to, e)
         raise EmailSendError(f"Unexpected error: {str(e)}")
