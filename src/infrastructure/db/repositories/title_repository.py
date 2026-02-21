@@ -3,6 +3,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import update, select, func, text, and_
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+import hashlib
 
 from src.infrastructure.db.models import (
     TitleRawDataDBModel,
@@ -18,31 +20,12 @@ class TitleRepository(ITitleRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    @asynccontextmanager
-    async def _advisory_lock(self, source: Source, external_id: str):
-        """
-        Acquire an advisory lock based on source and external_id.
-        This ensures only one worker can upsert a specific title at a time.
-        """
-        key_string = f"{source.value}:{external_id}"
-        key_hash = hash(key_string) % (2**31)
-
-        try:
-            await self._session.exec(
-                text("SELECT pg_advisory_xact_lock(:key)"),  # type: ignore
-                params={"key": key_hash},
-            )  # type: ignore
-            yield
-        finally:
-            pass
-
     async def upsert_raw_title(
         self,
         raw_title: SourceTitleData,
     ) -> int | None:
-        async with self._advisory_lock(
-            raw_title.source_metadata.source,
-            raw_title.source_metadata.external_id,
+        async with self.lock(
+            f"{raw_title.source_metadata.source}:{raw_title.source_metadata.external_id}",
         ):
             insert_values = SourceTitleDataMapper.to_db_dict(raw_title)
 
@@ -83,6 +66,7 @@ class TitleRepository(ITitleRepository):
                 )
             )
             .limit(limit)
+            .with_for_update(skip_locked=True)
         )
 
         result = await self._session.exec(stmt)
@@ -137,26 +121,20 @@ class TitleRepository(ITitleRepository):
         title_data: SourceTitleData,
         search_text: str,
         data_quality_score: float,
-    ) -> int | None:
-        values = TitleDataMapper.to_db(
+    ) -> int:
+        db_model = TitleDataMapper.to_db(
             domain_model=title_data.title_data,
             search_text=search_text,
             data_quality_score=data_quality_score,
             primary_source=title_data.source_metadata.source,
             extended_data=title_data.source_metadata.extended_data,
-        ).model_dump(exclude={"id", "search_vector", "created_at", "updated_at"})
-
-        stmt = (
-            pg_insert(TitleDBModel)
-            .values(**values)
-            .on_conflict_do_nothing(index_elements=["mal_id"])
-            .returning(TitleDBModel.id)  # type: ignore
         )
 
-        result = await self._session.exec(stmt)
+        self._session.add(db_model)
         await self._session.flush()
+        await self._session.refresh(db_model)
 
-        return result.scalar_one_or_none()
+        return db_model.id # type: ignore
 
     async def get_master_title(self, master_title_id: int) -> TitleData | None:
         result = await self._session.get(TitleDBModel, master_title_id)
@@ -463,3 +441,20 @@ class TitleRepository(ITitleRepository):
 
         await self._session.exec(stmt)
         await self._session.flush()
+
+    @asynccontextmanager
+    async def lock(self, key: str) -> AsyncGenerator[None, None]:
+        """
+        Acquire an advisory lock based on source and external_id.
+        This ensures only one worker can upsert a specific title at a time.
+        """
+        key_hash = abs(int(hashlib.md5(key.encode()).hexdigest(), 16)) % (2**31)
+
+        try:
+            await self._session.exec(
+                text("SELECT pg_advisory_xact_lock(:key)"),  # type: ignore
+                params={"key": key_hash},
+            )  # type: ignore
+            yield
+        finally:
+            pass

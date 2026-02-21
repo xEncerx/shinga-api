@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from src.domain.errors.base import ConflictError
 from src.domain.interfaces import ITitleRepository, IBaseMatcher
 from src.domain.services import (
     TitleSimilarityScorer,
@@ -59,8 +58,6 @@ class ConsolidateRawTitleUseCase:
         Args:
             raw_title_id (int): The ID of the raw title to consolidate.
         """
-        is_new = False
-
         # 1. Retrieve the raw title
         raw_title = await self._title_repository.get_raw_title(raw_title_id)
         if not raw_title:
@@ -68,61 +65,15 @@ class ConsolidateRawTitleUseCase:
 
         cover_url = raw_title.title_data.cover.original
 
-        # The status is not updated here because the method get_unmapped_raw_titles takes the titles and automatically changes the status to IN_PROGRESS.
-        # 2. Update status to IN_PROGRESS
-        # await self._title_repository.update_consolidation_status(
-        #     raw_title_id=raw_title_id,
-        #     status=ConsolidationStatus.IN_PROGRESS,
-        # )
+        # 2. Attempt to find a matching master title and consolidate it, or create a new master title if no match is found
+        master_title_id, is_new = await self._upsert_title(raw_title)
 
-        candidate = await self._find_candidate(raw_title)
-
-        # 3. Merge or create title
-        if candidate:
-            # Match found = merge titles
-            merged_title = self._title_merger.merge(raw_title.title_data, candidate)
-            await self._title_repository.update_master_title(
-                master_title_id=candidate.id,  # type: ignore
-                title_data=merged_title,
-                search_text=self._text_normalizer.normalize_multiple(
-                    [
-                        merged_title.name_ru,
-                        merged_title.name_en,
-                        *merged_title.alt_names,
-                    ],
-                    deduplicate=True,
-                    min_word_length=3,
-                ),
-                data_quality_score=self._quality_scorer.score(merged_title),
-            )
-            master_title_id = candidate.id
-        else:
-            # No match found = create a new title
-
-            # Use pending cover for new titles to download later
-            raw_title.title_data.cover = TitleCover.pending()
-            td = raw_title.title_data
-            master_title_id = await self._title_repository.add_master_title(
-                raw_title,
-                search_text=self._text_normalizer.normalize_multiple(
-                    [td.name_ru, td.name_en, *td.alt_names],
-                    deduplicate=True,
-                    min_word_length=3,
-                ),
-                data_quality_score=self._quality_scorer.score(td),
-            )
-            is_new = True
-
-        # 3.1. If an error occurs while adding the title (e.g., due to a race condition when adding a similar title), then we throw an error
-        if master_title_id is None:
-            raise ConflictError("Failed to create or update master title.")
-
-        # 4. Link raw title to master title
+        # 3. Link raw title to master title
         await self._title_repository.link_raw_to_master(
             raw_title_id=raw_title_id,
             master_title_id=master_title_id,  # type: ignore
         )
-        # 5. Update status to CONSOLIDATED
+        # 4. Update status to CONSOLIDATED
         await self._title_repository.update_consolidation_status(
             raw_title_id=raw_title_id,
             status=ConsolidationStatus.CONSOLIDATED,
@@ -136,6 +87,76 @@ class ConsolidateRawTitleUseCase:
             is_new=is_new,
             cover_url=cover_url,
         )
+
+    async def _upsert_title(
+        self, raw_title: SourceTitleData
+    ) -> tuple[int, bool]:
+        rtd = raw_title.title_data
+        is_new = False
+
+        candidate = await self._find_candidate(raw_title)
+        if candidate:
+            master_title_id = await self._update_existing_title(
+                master_title_id=candidate.id,  # type: ignore
+                raw_title=raw_title,
+                candidate=candidate,
+            )
+            return master_title_id, is_new
+
+        lock_key = "consolidate:" + self._text_normalizer.normalize_multiple(
+            [rtd.name_ru, rtd.name_en, *rtd.alt_names],
+            deduplicate=True,
+            min_word_length=3,
+        )
+        async with self._title_repository.lock(lock_key):  # type: ignore
+            # Re-check inside the lock: another worker may have created the title
+            # while this worker was waiting to acquire the lock
+            candidate = await self._find_candidate(raw_title)
+            if candidate:
+                master_title_id = await self._update_existing_title(
+                    master_title_id=candidate.id,  # type: ignore
+                    raw_title=raw_title,
+                    candidate=candidate,
+                )
+            else:
+                master_title_id = await self._add_new_title(raw_title=raw_title)
+                is_new = True
+
+        return master_title_id, is_new
+
+    async def _add_new_title(self, raw_title: SourceTitleData) -> int:
+        raw_title.title_data.cover = TitleCover.pending()
+        rtd = raw_title.title_data
+
+        return await self._title_repository.add_master_title(
+            raw_title,
+            search_text=self._text_normalizer.normalize_multiple(
+                [rtd.name_ru, rtd.name_en, *rtd.alt_names],
+                deduplicate=True,
+                min_word_length=3,
+            ),
+            data_quality_score=self._quality_scorer.score(rtd),
+        )
+
+    async def _update_existing_title(
+        self,
+        master_title_id: int,
+        raw_title: SourceTitleData,
+        candidate: TitleData,
+    ) -> int:
+        merged_title = self._title_merger.merge(raw_title.title_data, candidate)
+        await self._title_repository.update_master_title(
+            master_title_id=master_title_id,
+            title_data=merged_title,
+            search_text=self._text_normalizer.normalize_multiple(
+                [merged_title.name_ru, merged_title.name_en, *merged_title.alt_names],
+                deduplicate=True,
+                min_word_length=3,
+            ),
+            data_quality_score=self._quality_scorer.score(merged_title),
+        )
+
+        return candidate.id  # type: ignore
 
     async def _find_candidate(
         self,

@@ -8,7 +8,6 @@ from src.application.use_cases import ConsolidateRawTitleUseCase
 from src.infrastructure.db.repositories import TitleRepository
 from src.domain.models.services import ConsolidationStatus
 from src.infrastructure.tasks.broker import parsing_broker
-from src.domain.errors.base import ConflictError
 from src.core import logger
 
 
@@ -70,14 +69,6 @@ async def consolidate_raw_title_task(
             try:
                 async with session.begin():
                     result = await use_case.execute(raw_title_id)
-            except ConflictError:
-                # If a conflict occurs, it means another task has processed a similar title concurrently.
-                # We can safely ignore this error as the title is already consolidated by another worker.
-                logger.warning(
-                    "Conflict detected while consolidating raw title ID={}. It may have been processed by another worker. Skipping.",
-                    raw_title_id,
-                )
-                return None
             except Exception as e:
                 # On any error, update status to FAILED with error detail
                 async with session.begin():
@@ -88,7 +79,7 @@ async def consolidate_raw_title_task(
                     )
                 raise e
 
-        if result.cover_url:
+        if result.cover_url and result.is_new:
             # Trigger cover download task
             await download_cover_task.kiq(
                 master_title_id=result.master_title_id,

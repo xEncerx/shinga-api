@@ -1,3 +1,4 @@
+from contextlib import AbstractAsyncContextManager
 from abc import ABC, abstractmethod
 
 from src.domain.models import *
@@ -45,7 +46,7 @@ class ITitleRepository(ABC):
         title_data: SourceTitleData,
         search_text: str,
         data_quality_score: float,
-    ) -> int | None:
+    ) -> int:
         """
         Add a new master title record to the database.
 
@@ -169,5 +170,12 @@ class ITitleRepository(ABC):
 
         Args:
             stuck_threshold_minutes: Time threshold in minutes. Records in IN_PROGRESS longer than this will be reset to PENDING.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def lock(self, key: str) -> AbstractAsyncContextManager[None]:
+        """
+        Lock a resource based on a unique key to prevent concurrent processing.
         """
         raise NotImplementedError
