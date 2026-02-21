@@ -7,8 +7,13 @@ from src.domain.services import (
     TextNormalizer,
     TitleQualityScorer,
 )
-from src.domain.models.titles import SourceTitleData, TitleData, TitleCover
-from src.domain.models.services import ConsolidationStatus
+from src.domain.models import (
+    SourceTitleData,
+    TitleData,
+    TitleCover,
+    ConsolidationStatus,
+    Source,
+)
 
 
 @dataclass
@@ -16,7 +21,7 @@ class ConsolidationResult:
     raw_title_id: int
     master_title_id: int
     external_id: str
-    source: str
+    source: Source
     is_new: bool
     cover_url: str | None = None
 
@@ -120,7 +125,7 @@ class ConsolidateRawTitleUseCase:
             raw_title_id=raw_title_id,
             master_title_id=master_title_id,  # type: ignore
             external_id=raw_title.source_metadata.external_id,
-            source=raw_title.source_metadata.source.name,
+            source=raw_title.source_metadata.source,
             is_new=is_new,
             cover_url=cover_url,
         )
