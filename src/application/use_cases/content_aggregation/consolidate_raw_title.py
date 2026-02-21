@@ -88,13 +88,13 @@ class ConsolidateRawTitleUseCase:
             cover_url=cover_url,
         )
 
-    async def _upsert_title(
-        self, raw_title: SourceTitleData
-    ) -> tuple[int, bool]:
+    async def _upsert_title(self, raw_title: SourceTitleData) -> tuple[int, bool]:
         rtd = raw_title.title_data
         is_new = False
 
+        # 1. Try to find a matching master title using matchers
         candidate = await self._find_candidate(raw_title)
+        # If candidate is found, update it with merged data from raw title and candidate
         if candidate:
             master_title_id = await self._update_existing_title(
                 master_title_id=candidate.id,  # type: ignore
@@ -103,14 +103,12 @@ class ConsolidateRawTitleUseCase:
             )
             return master_title_id, is_new
 
-        lock_key = "consolidate:" + self._text_normalizer.normalize_multiple(
-            [rtd.name_ru, rtd.name_en, *rtd.alt_names],
-            deduplicate=True,
-            min_word_length=3,
-        )
+        # 2. If no candidate found, create a new master title based on raw title data
+        lock_key = self._generate_lock_key(rtd)
         async with self._title_repository.lock(lock_key):  # type: ignore
             # Re-check inside the lock: another worker may have created the title
             # while this worker was waiting to acquire the lock
+            # 2.1 Try to find a candidate again to avoid duplicates
             candidate = await self._find_candidate(raw_title)
             if candidate:
                 master_title_id = await self._update_existing_title(
@@ -119,6 +117,7 @@ class ConsolidateRawTitleUseCase:
                     candidate=candidate,
                 )
             else:
+                # 2.2 If still no candidate, create a new master title
                 master_title_id = await self._add_new_title(raw_title=raw_title)
                 is_new = True
 
@@ -136,6 +135,18 @@ class ConsolidateRawTitleUseCase:
                 min_word_length=3,
             ),
             data_quality_score=self._quality_scorer.score(rtd),
+        )
+
+    def _generate_lock_key(self, title_data: TitleData) -> str:
+        """
+        Generate a lock key for a raw title based on its MAL ID if available, or a normalized combination of its names otherwise.
+        """
+        if title_data.mal_id is not None:
+            return f"consolidate:mal_id:{title_data.mal_id}"
+        return "consolidate:" + self._text_normalizer.normalize_multiple(
+            [title_data.name_ru, title_data.name_en, *title_data.alt_names],
+            deduplicate=True,
+            min_word_length=3,
         )
 
     async def _update_existing_title(
