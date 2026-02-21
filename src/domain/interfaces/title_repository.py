@@ -45,7 +45,7 @@ class ITitleRepository(ABC):
         title_data: SourceTitleData,
         search_text: str,
         data_quality_score: float,
-    ) -> int:
+    ) -> int | None:
         """
         Add a new master title record to the database.
 

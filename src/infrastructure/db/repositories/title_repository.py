@@ -137,20 +137,26 @@ class TitleRepository(ITitleRepository):
         title_data: SourceTitleData,
         search_text: str,
         data_quality_score: float,
-    ) -> int:
-        master_title = TitleDataMapper.to_db(
+    ) -> int | None:
+        values = TitleDataMapper.to_db(
             domain_model=title_data.title_data,
             search_text=search_text,
             data_quality_score=data_quality_score,
             primary_source=title_data.source_metadata.source,
             extended_data=title_data.source_metadata.extended_data,
+        ).model_dump(exclude={"id", "search_vector", "created_at", "updated_at"})
+
+        stmt = (
+            pg_insert(TitleDBModel)
+            .values(**values)
+            .on_conflict_do_nothing(index_elements=["mal_id"])
+            .returning(TitleDBModel.id)  # type: ignore
         )
 
-        self._session.add(master_title)
+        result = await self._session.exec(stmt)
         await self._session.flush()
-        await self._session.refresh(master_title)
 
-        return master_title.id  # type: ignore
+        return result.scalar_one_or_none()
 
     async def get_master_title(self, master_title_id: int) -> TitleData | None:
         result = await self._session.get(TitleDBModel, master_title_id)

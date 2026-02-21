@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from src.domain.errors.base import ConflictError
 from src.domain.interfaces import ITitleRepository, IBaseMatcher
 from src.domain.services import (
     TitleSimilarityScorer,
@@ -67,6 +68,7 @@ class ConsolidateRawTitleUseCase:
 
         cover_url = raw_title.title_data.cover.original
 
+        # The status is not updated here because the method get_unmapped_raw_titles takes the titles and automatically changes the status to IN_PROGRESS.
         # 2. Update status to IN_PROGRESS
         # await self._title_repository.update_consolidation_status(
         #     raw_title_id=raw_title_id,
@@ -110,6 +112,11 @@ class ConsolidateRawTitleUseCase:
                 data_quality_score=self._quality_scorer.score(td),
             )
             is_new = True
+
+        # 3.1. If an error occurs while adding the title (e.g., due to a race condition when adding a similar title), then we throw an error
+        if master_title_id is None:
+            raise ConflictError("Failed to create or update master title.")
+
         # 4. Link raw title to master title
         await self._title_repository.link_raw_to_master(
             raw_title_id=raw_title_id,

@@ -8,6 +8,7 @@ from src.application.use_cases import ConsolidateRawTitleUseCase
 from src.infrastructure.db.repositories import TitleRepository
 from src.domain.models.services import ConsolidationStatus
 from src.infrastructure.tasks.broker import parsing_broker
+from src.domain.errors.base import ConflictError
 from src.core import logger
 
 
@@ -69,6 +70,14 @@ async def consolidate_raw_title_task(
             try:
                 async with session.begin():
                     result = await use_case.execute(raw_title_id)
+            except ConflictError:
+                # If a conflict occurs, it means another task has processed a similar title concurrently.
+                # We can safely ignore this error as the title is already consolidated by another worker.
+                logger.warning(
+                    "Conflict detected while consolidating raw title ID={}. It may have been processed by another worker. Skipping.",
+                    raw_title_id,
+                )
+                return None
             except Exception as e:
                 # On any error, update status to FAILED with error detail
                 async with session.begin():
@@ -89,11 +98,18 @@ async def consolidate_raw_title_task(
             )  # type: ignore
 
         logger.info(
-            f"[{'NEW' if result.is_new else 'UPDATED'}] Consolidated raw title ID={raw_title_id} into master title ID={result.master_title_id} ({result.source.upper()}:{result.external_id})"
+            "[{}] Consolidated raw title ID={} into master title ID={} ({}:{})",
+            "NEW" if result.is_new else "UPDATED",
+            raw_title_id,
+            result.master_title_id,
+            result.source.upper(),
+            result.external_id,
         )
     except Exception as e:
         logger.error(
-            f"Unexpected error consolidating raw title ID={raw_title_id}: {e}",
+            "Unexpected error consolidating raw title ID={}: {}",
+            raw_title_id,
+            e,
             exc_info=True,
         )
         return None
