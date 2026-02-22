@@ -15,8 +15,6 @@ class TitleNameMatcher(IBaseMatcher):
         td = raw_title.title_data
         normalized_name = TextNormalizer.normalize_multiple(
             [td.name_ru, td.name_en, *td.alt_names],
-            deduplicate=True,
-            min_word_length=3,
         )
         result = await self._title_repository.get_master_by_name(
             normalized_name,

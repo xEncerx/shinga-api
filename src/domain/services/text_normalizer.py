@@ -35,7 +35,23 @@ class TextNormalizer:
         texts: list[str | None],
         deduplicate: bool = True,
         min_word_length: int = 3,
+        max_length: int | None = 2000,
     ) -> str:
+        """
+        Normalize and join multiple texts into a single search string.
+
+        Args:
+            texts: List of texts to normalize and combine.
+            deduplicate: Remove duplicate words across all texts.
+            min_word_length: Skip words shorter than this length.
+            max_length: If set, truncate the result at the last complete word
+                        that fits within this many characters. Use it to avoid
+                        exceeding database index size limits (e.g. PostgreSQL
+                        btree limit of 2704 bytes).
+
+        Returns:
+            Normalized, combined text string.
+        """
         normalized_texts = []
         for text in texts:
             if text:
@@ -47,20 +63,27 @@ class TextNormalizer:
             return ""
 
         if not deduplicate:
-            return " ".join(normalized_texts)
+            result = " ".join(normalized_texts)
+        else:
+            seen_words = set()
+            result_parts = []
 
-        seen_words = set()
-        result_parts = []
+            for normalized_text in normalized_texts:
+                words = [
+                    word
+                    for word in normalized_text.split()
+                    if len(word) >= min_word_length and word not in seen_words
+                ]
 
-        for normalized_text in normalized_texts:
-            words = [
-                word
-                for word in normalized_text.split()
-                if len(word) >= min_word_length and word not in seen_words
-            ]
+                if words:
+                    seen_words.update(words)
+                    result_parts.append(" ".join(words))
 
-            if words:
-                seen_words.update(words)
-                result_parts.append(" ".join(words))
+            result = " ".join(result_parts)
 
-        return " ".join(result_parts)
+        if max_length is not None and len(result) > max_length:
+            truncated = result[:max_length]
+            last_space = truncated.rfind(" ")
+            result = truncated[:last_space] if last_space != -1 else truncated
+
+        return result

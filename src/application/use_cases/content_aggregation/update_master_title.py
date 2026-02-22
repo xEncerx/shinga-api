@@ -33,8 +33,6 @@ class UpdateMasterTitleUseCase:
                     merged_title.name_en,
                     *merged_title.alt_names,
                 ],
-                deduplicate=True,
-                min_word_length=3,
             ),
             data_quality_score=self._quality_scorer.score(merged_title),
         )

@@ -131,8 +131,6 @@ class ConsolidateRawTitleUseCase:
             raw_title,
             search_text=self._text_normalizer.normalize_multiple(
                 [rtd.name_ru, rtd.name_en, *rtd.alt_names],
-                deduplicate=True,
-                min_word_length=3,
             ),
             data_quality_score=self._quality_scorer.score(rtd),
         )
@@ -145,8 +143,6 @@ class ConsolidateRawTitleUseCase:
             return f"consolidate:mal_id:{title_data.mal_id}"
         return "consolidate:" + self._text_normalizer.normalize_multiple(
             [title_data.name_ru, title_data.name_en, *title_data.alt_names],
-            deduplicate=True,
-            min_word_length=3,
         )
 
     async def _update_existing_title(
@@ -161,8 +157,6 @@ class ConsolidateRawTitleUseCase:
             title_data=merged_title,
             search_text=self._text_normalizer.normalize_multiple(
                 [merged_title.name_ru, merged_title.name_en, *merged_title.alt_names],
-                deduplicate=True,
-                min_word_length=3,
             ),
             data_quality_score=self._quality_scorer.score(merged_title),
         )
