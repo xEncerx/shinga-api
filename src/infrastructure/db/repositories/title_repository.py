@@ -24,29 +24,26 @@ class TitleRepository(ITitleRepository):
         self,
         raw_title: SourceTitleData,
     ) -> int | None:
-        async with self.lock(
-            f"{raw_title.source_metadata.source}:{raw_title.source_metadata.external_id}",
-        ):
-            insert_values = SourceTitleDataMapper.to_db_dict(raw_title)
+        insert_values = SourceTitleDataMapper.to_db_dict(raw_title)
 
-            stmt = pg_insert(TitleRawDataDBModel).values(**insert_values)
-            stmt = stmt.on_conflict_do_update(
-                constraint="uq_source_external_id",
-                set_={
-                    "is_deleted": stmt.excluded.is_deleted,
-                    "raw_data": stmt.excluded.raw_data,
-                    "extended_data": stmt.excluded.extended_data,
-                    "source_url": stmt.excluded.source_url,
-                    "last_verified_at": stmt.excluded.last_verified_at,
-                },
-            ).returning(
-                TitleRawDataDBModel.id  # type: ignore
-            )  # type: ignore
+        stmt = pg_insert(TitleRawDataDBModel).values(**insert_values)
+        stmt = stmt.on_conflict_do_update(
+            constraint="uq_source_external_id",
+            set_={
+                "is_deleted": stmt.excluded.is_deleted,
+                "raw_data": stmt.excluded.raw_data,
+                "extended_data": stmt.excluded.extended_data,
+                "source_url": stmt.excluded.source_url,
+                "last_verified_at": stmt.excluded.last_verified_at,
+            },
+        ).returning(
+            TitleRawDataDBModel.id  # type: ignore
+        )  # type: ignore
 
-            result = await self._session.exec(stmt)
-            await self._session.flush()
+        result = await self._session.exec(stmt)
+        await self._session.flush()
 
-            return result.scalar_one_or_none()
+        return result.scalar_one_or_none()
 
     async def get_raw_title(self, raw_title_id: int) -> SourceTitleData | None:
         result = await self._session.get(TitleRawDataDBModel, raw_title_id)
