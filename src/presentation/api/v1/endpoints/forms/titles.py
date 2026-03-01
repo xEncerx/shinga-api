@@ -7,9 +7,14 @@ from src.domain.models.titles import (
     TitleStatus,
     TitleBookmark,
 )
+from src.presentation.api.decorators.cache_control_route import *
 from src.presentation.api.schemas.responses.forms import *
 
-router = APIRouter(prefix="/titles", tags=["Titles Forms"])
+router = APIRouter(
+    prefix="/titles",
+    route_class=cache_control_route(),
+    tags=["Titles Forms"],
+)
 
 
 @router.get("/genres")
