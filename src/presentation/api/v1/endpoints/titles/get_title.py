@@ -16,7 +16,11 @@ router = APIRouter(tags=["Get Titles"])
     }
 )
 async def get_title_by_id_endpoint(
-    title_id: int = Path(..., ge=1),
+    title_id: int = Path(
+        ...,
+        ge=1,
+        le=2147483647,  # Max value for 32-bit signed integer
+    ),
     *,
     use_case: GetTitleUseCaseDep,
     user: GetOptionalUserDep,
