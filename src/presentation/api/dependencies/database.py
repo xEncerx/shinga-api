@@ -8,10 +8,17 @@ from fastapi import Depends
 from src.infrastructure.db.session import async_session
 from src.core import settings
 
-__all__ = ["SessionDep", "RedisDep"]
+__all__ = ["SessionDep", "TransactionalSessionDep", "RedisDep"]
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """Read-only session — no transaction overhead."""
+    async with async_session() as session:
+        yield session
+
+
+async def get_transactional_session() -> AsyncGenerator[AsyncSession, None]:
+    """Session with explicit transaction — for write operations."""
     async with async_session() as session:
         async with session.begin():
             yield session
@@ -24,4 +31,5 @@ def get_redis_client() -> Redis:
 
 # === Dependencies Annotations ===
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+TransactionalSessionDep = Annotated[AsyncSession, Depends(get_transactional_session)]
 RedisDep = Annotated[Redis, Depends(get_redis_client)]

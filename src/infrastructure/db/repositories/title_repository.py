@@ -131,7 +131,7 @@ class TitleRepository(ITitleRepository):
         await self._session.flush()
         await self._session.refresh(db_model)
 
-        return db_model.id # type: ignore
+        return db_model.id  # type: ignore
 
     async def get_master_title(self, master_title_id: int) -> TitleData | None:
         result = await self._session.get(TitleDBModel, master_title_id)
@@ -302,10 +302,12 @@ class TitleRepository(ITitleRepository):
         where_conditions = []
         tsquery = None
 
+        # Window function — counts all matching rows without a second query
+        total_count_col = func.count().over().label("total_count")
+
         # 1. Build base query depending on whether user_id is provided
         if user_id is not None:
-            # If user_id is provided, join with UserTitlesDBModel
-            stmt = select(TitleDBModel, UserTitlesDBModel).outerjoin(
+            stmt = select(TitleDBModel, UserTitlesDBModel, total_count_col).outerjoin(
                 UserTitlesDBModel,
                 and_(
                     UserTitlesDBModel.title_id == TitleDBModel.id,  # type: ignore
@@ -313,10 +315,9 @@ class TitleRepository(ITitleRepository):
                 ),
             )
         else:
-            # If no user_id, select only TitleDBModel
-            stmt = select(TitleDBModel)
+            stmt = select(TitleDBModel, total_count_col)
 
-        # 2. If a title is provided, perform a full-text search
+        # 2. If a query is provided, perform a full-text search
         if query:
             tokens = query.strip().split()
             if tokens:
@@ -370,36 +371,37 @@ class TitleRepository(ITitleRepository):
         else:
             stmt = stmt.order_by(sort_column.desc())  # type: ignore
 
-        # 6. Pagination calculations
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total_count = (await self._session.exec(count_stmt)).first() or 0
-        last_visible_page = (total_count + page_size - 1) // page_size
-        has_next_page = page < last_visible_page
-
+        # 6. Pagination — single query with window function
         offset = (page - 1) * page_size
         stmt = stmt.offset(offset).limit(page_size)
 
-        # 7. Execute query
         result = await self._session.exec(stmt)
         rows = result.all()
 
+        total_count: int = 0
         content: list[tuple[TitleData, UserTitleData | None]] = []
+
         for row in rows:
             if user_id is not None:
-                # When user_id is provided, row is tuple (TitleDBModel, UserTitlesDBModel | None)
-                title_row, user_title_row = row
+                # row = (TitleDBModel, UserTitlesDBModel | None, total_count)
+                title_row, user_title_row, total_count = row  # type: ignore
                 user_title_data = (
                     UserTitleMapper.to_domain(user_title_row)  # type: ignore
                     if user_title_row is not None
                     else None
                 )
             else:
-                # When no user_id, row is just TitleDBModel
-                title_row = row
+                # row = (TitleDBModel, total_count)
+                title_row, total_count = row  # type: ignore
                 user_title_data = None
 
             title_data = TitleDataMapper.to_domain(title_row)  # type: ignore
             content.append((title_data, user_title_data))
+
+        last_visible_page = (
+            (total_count + page_size - 1) // page_size if total_count else 1
+        )
+        has_next_page = page < last_visible_page
 
         pagination = Pagination(
             last_visible_page=last_visible_page,

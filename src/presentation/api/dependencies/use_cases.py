@@ -4,7 +4,7 @@ from fastapi import Depends
 
 
 from src.presentation.api.dependencies.security import TokenServiceDep
-from src.presentation.api.dependencies.database import SessionDep
+from src.presentation.api.dependencies.database import *
 from src.presentation.api.dependencies.services import *
 from src.infrastructure.db.repositories import *
 from src.application.use_cases import *
@@ -25,21 +25,9 @@ __all__ = [
 ]
 
 
-async def get_auth_use_case(
-    session: SessionDep,
-    token_service: TokenServiceDep,
-    hasher: PasswordHasherDep,
-) -> AuthenticateUserUseCase:
-    return AuthenticateUserUseCase(
-        user_repository=UserRepository(session),
-        token_service=token_service,
-        password_hasher=hasher,
-        expire_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-
-
+# === Write use cases (need transaction) ===
 async def get_register_use_case(
-    session: SessionDep,
+    session: TransactionalSessionDep,
     hasher: PasswordHasherDep,
     password_validator: PasswordValidatorDep,
     username_validator: UsernameValidatorDep,
@@ -53,7 +41,7 @@ async def get_register_use_case(
 
 
 async def get_add_user_title_use_case(
-    session: SessionDep,
+    session: TransactionalSessionDep,
 ) -> AddUserTitleUseCase:
     return AddUserTitleUseCase(
         user_title_repository=UserTitleRepository(session),
@@ -62,11 +50,41 @@ async def get_add_user_title_use_case(
 
 
 async def get_update_user_title_use_case(
-    session: SessionDep,
+    session: TransactionalSessionDep,
 ) -> UpdateUserTitleUseCase:
     return UpdateUserTitleUseCase(
         user_title_repository=UserTitleRepository(session),
         title_repository=TitleRepository(session),
+    )
+
+
+async def get_reset_password_use_case(
+    session: TransactionalSessionDep,
+    code_storage: VerificationStorageDep,
+    password_hasher: PasswordHasherDep,
+    password_validator: PasswordValidatorDep,
+) -> ResetPasswordUseCase:
+    return ResetPasswordUseCase(
+        user_repository=UserRepository(session),
+        code_storage=code_storage,
+        password_hasher=password_hasher,
+        password_validator=password_validator,
+    )
+
+
+# === Read-only use cases (no transaction) ===
+
+
+async def get_auth_use_case(
+    session: SessionDep,
+    token_service: TokenServiceDep,
+    hasher: PasswordHasherDep,
+) -> AuthenticateUserUseCase:
+    return AuthenticateUserUseCase(
+        user_repository=UserRepository(session),
+        token_service=token_service,
+        password_hasher=hasher,
+        expire_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
 
@@ -106,29 +124,17 @@ async def get_request_password_reset_use_case(
     )
 
 
-async def get_reset_password_use_case(
-    session: SessionDep,
-    code_storage: VerificationStorageDep,
-    password_hasher: PasswordHasherDep,
-    password_validator: PasswordValidatorDep,
-) -> ResetPasswordUseCase:
-    return ResetPasswordUseCase(
-        user_repository=UserRepository(session),
-        code_storage=code_storage,
-        password_hasher=password_hasher,
-        password_validator=password_validator,
-    )
-
-
 async def get_verify_password_reset_code_use_case(
     code_storage: VerificationStorageDep,
 ) -> VerifyPasswordResetCodeUseCase:
     return VerifyPasswordResetCodeUseCase(code_storage=code_storage)
 
 
-async def get_user_statistics_use_case(session: SessionDep) -> GetUserStatisticsUseCase:
+async def get_user_statistics_use_case(
+    session: SessionDep,
+) -> GetUserStatisticsUseCase:
     return GetUserStatisticsUseCase(
-        repository=UserTitleRepository(session),
+        user_title_repository=UserTitleRepository(session),
     )
 
 
