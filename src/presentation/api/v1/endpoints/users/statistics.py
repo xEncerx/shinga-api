@@ -6,7 +6,7 @@ from src.presentation.api.schemas.responses.statistics import *
 router = APIRouter(prefix="/statistics", tags=["User Statistics"])
 
 
-@router.get("/")
+@router.get("")
 async def get_user_statistics_endpoint(
     user: GetUserDep,
     use_case: UserStatisticsUseCaseDep,

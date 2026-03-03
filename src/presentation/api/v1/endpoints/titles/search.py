@@ -15,7 +15,7 @@ from src.presentation.api.dependencies import GetOptionalUserDep
 router = APIRouter(prefix="/search", tags=["Search Titles"])
 
 
-@router.post("/")
+@router.post("")
 async def search_titles_endpoint(
     request: TitleSearchRequest,
     user: GetOptionalUserDep,
