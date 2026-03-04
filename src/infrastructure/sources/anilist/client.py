@@ -16,7 +16,7 @@ class AniListClient(BaseProvider):
                 perPage
             }
             media(
-                sort: POPULARITY_DESC
+                sort: ID
                 type: MANGA
             ) {
                 ...media
