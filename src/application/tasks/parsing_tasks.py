@@ -8,6 +8,7 @@ from asyncio import TimeoutError
 
 from taskiq import Context, TaskiqDepends
 from typing import Annotated
+import random
 
 from src.infrastructure.sources import AVAILABLE_SOURCES, BaseProvider
 from src.infrastructure.sources.base_provider import SourceDetail
@@ -72,15 +73,21 @@ async def enqueue_parsing_jobs_task(
     # Find maximum number of pages across all sources
     max_pages = max(info.total_pages for info in sources_info)
 
-    # Enqueue tasks in round-robin order: A-1, B-1, C-1, A-2, B-2, C-2, ...
-    for page in range(1, max_pages + 1):
-        for source_info in sources_info:
-            if page <= source_info.total_pages:
-                await parse_source_page_task.kiq(
-                    source_info.source,
-                    page,
-                    source_info.items_per_page,
-                )  # type: ignore
+    tasks: list[tuple[SourceDetail, int]] = [
+        (source_info, page)
+        for page in range(1, max_pages + 1)
+        for source_info in sources_info
+        if page <= source_info.total_pages
+    ]
+    random.shuffle(tasks)
+
+    # Enqueue tasks in random order to distribute load across sources
+    for source_info, page in tasks:
+        await parse_source_page_task.kiq(
+            source_info.source,
+            page,
+            source_info.items_per_page,
+        )  # type: ignore
 
 
 @parsing_broker.task(retry_on_error=True)
