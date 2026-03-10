@@ -299,61 +299,78 @@ class TitleRepository(ITitleRepository):
         page: int = 1,
         page_size: int = 27,
     ) -> tuple[Pagination, list[tuple[TitleData, UserTitleData | None]]]:
-        where_conditions = []
         tsquery = None
+        title_conditions = []
 
-        # Window function — counts all matching rows without a second query
-        total_count_col = func.count().over().label("total_count")
+        # 1. Full-text search condition
+        if query:
+            tokens = query.strip().split()
+            if tokens:
+                tokens[-1] += ":*"
+                tsquery = func.to_tsquery("simple", " & ".join(tokens))
+                title_conditions.append(
+                    TitleDBModel.search_vector.op("@@")(tsquery)  # type: ignore
+                )
 
-        # 1. Build base query depending on whether user_id is provided
-        if user_id is not None:
-            stmt = select(TitleDBModel, UserTitlesDBModel, total_count_col).outerjoin(
+        # 2. Filters on TitleDBModel
+        if type:
+            title_conditions.append(TitleDBModel.type == type)
+        if status:
+            title_conditions.append(TitleDBModel.status == status)
+        if genres:
+            title_conditions.append(TitleDBModel.genres.contains(genres))  # type: ignore
+        if categories:
+            title_conditions.append(TitleDBModel.categories.contains(categories))  # type: ignore
+        if min_rating is not None:
+            title_conditions.append(TitleDBModel.rating >= min_rating)
+        if max_rating is not None:
+            title_conditions.append(TitleDBModel.rating <= max_rating)
+        if min_chapters is not None:
+            title_conditions.append(TitleDBModel.chapters >= min_chapters)
+        if max_chapters is not None:
+            title_conditions.append(TitleDBModel.chapters <= max_chapters)
+
+        include_bookmark = bookmark is not None and user_id is not None
+
+        # 3. COUNT query with same filters to get total count for pagination.
+        # Joins with UserTitlesDBModel if bookmark filter is applied.
+        count_stmt = select(func.count()).select_from(TitleDBModel)
+        if include_bookmark:
+            count_stmt = count_stmt.join(
                 UserTitlesDBModel,
                 and_(
                     UserTitlesDBModel.title_id == TitleDBModel.id,  # type: ignore
                     UserTitlesDBModel.user_id == user_id,  # type: ignore
                 ),
             )
+            count_conditions = title_conditions + [UserTitlesDBModel.bookmark == bookmark]  # type: ignore
         else:
-            stmt = select(TitleDBModel, total_count_col)
+            count_conditions = title_conditions
 
-        # 2. If a query is provided, perform a full-text search
-        if query:
-            tokens = query.strip().split()
-            if tokens:
-                tokens[-1] += ":*"
-                tsquery_str = " & ".join(tokens)
-                tsquery = func.to_tsquery("simple", tsquery_str)  # type: ignore
-                where_conditions.append(
-                    TitleDBModel.search_vector.op("@@")(tsquery)  # type: ignore
-                )
+        if count_conditions:
+            count_stmt = count_stmt.where(and_(*count_conditions))
 
-        # 3. Filters by type, status, genres, categories, bookmark
-        if type:
-            where_conditions.append(TitleDBModel.type == type)
-        if status:
-            where_conditions.append(TitleDBModel.status == status)
-        if genres:
-            where_conditions.append(TitleDBModel.genres.contains(genres))  # type: ignore
-        if categories:
-            where_conditions.append(
-                TitleDBModel.categories.contains(categories)  # type: ignore
+        count_result = await self._session.exec(count_stmt)
+        total_count: int = count_result.first() or 0
+
+        # 4. Data query
+        if user_id is not None:
+            stmt = select(TitleDBModel, UserTitlesDBModel).outerjoin(
+                UserTitlesDBModel,
+                and_(
+                    UserTitlesDBModel.title_id == TitleDBModel.id,  # type: ignore
+                    UserTitlesDBModel.user_id == user_id,  # type: ignore
+                ),
             )
-        if min_rating is not None:
-            where_conditions.append(TitleDBModel.rating >= min_rating)
-        if max_rating is not None:
-            where_conditions.append(TitleDBModel.rating <= max_rating)
-        if min_chapters is not None:
-            where_conditions.append(TitleDBModel.chapters >= min_chapters)
-        if max_chapters is not None:
-            where_conditions.append(TitleDBModel.chapters <= max_chapters)
+            data_conditions = title_conditions + (
+                [UserTitlesDBModel.bookmark == bookmark] if include_bookmark else []  # type: ignore
+            )
+        else:
+            stmt = select(TitleDBModel)
+            data_conditions = title_conditions
 
-        if bookmark is not None and user_id is not None:
-            where_conditions.append(UserTitlesDBModel.bookmark == bookmark)  # type: ignore
-
-        # 4. Apply WHERE conditions
-        if where_conditions:
-            stmt = stmt.where(and_(*where_conditions))
+        if data_conditions:
+            stmt = stmt.where(and_(*data_conditions))
 
         # 5. Sorting
         sort_column = self._SORT_COLUMN_MAP.get(sort_by, TitleDBModel.rating)
@@ -362,8 +379,7 @@ class TitleRepository(ITitleRepository):
                 func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
             )
 
-        # If sorting by updated_at but we don't have user-specific data, sort by released_at instead
-        if sort_column == TitleSortBy.UPDATED_AT and user_id is None:
+        if sort_by == TitleSortBy.UPDATED_AT and user_id is None:
             sort_column = TitleDBModel.released_at
 
         if order == SortingOrder.ASC:
@@ -371,50 +387,45 @@ class TitleRepository(ITitleRepository):
         else:
             stmt = stmt.order_by(sort_column.desc())  # type: ignore
 
-        # 6. Pagination — single query with window function
+        # 6. Pagination — LIMIT applies without materializing all rows
         offset = (page - 1) * page_size
         stmt = stmt.offset(offset).limit(page_size)
 
         result = await self._session.exec(stmt)
         rows = result.all()
 
-        total_count: int = 0
         content: list[tuple[TitleData, UserTitleData | None]] = []
-
         for row in rows:
             if user_id is not None:
-                # row = (TitleDBModel, UserTitlesDBModel | None, total_count)
-                title_row, user_title_row, total_count = row  # type: ignore
+                title_row, user_title_row = row  # type: ignore
                 user_title_data = (
                     UserTitleMapper.to_domain(user_title_row)  # type: ignore
                     if user_title_row is not None
                     else None
                 )
             else:
-                # row = (TitleDBModel, total_count)
-                title_row, total_count = row  # type: ignore
+                title_row = row  # type: ignore
                 user_title_data = None
 
-            title_data = TitleDataMapper.to_domain(title_row)  # type: ignore
-            content.append((title_data, user_title_data))
+            content.append((TitleDataMapper.to_domain(title_row), user_title_data))  # type: ignore
 
         last_visible_page = (
             (total_count + page_size - 1) // page_size if total_count else 1
         )
-        has_next_page = page < last_visible_page
 
-        pagination = Pagination(
-            last_visible_page=last_visible_page,
-            has_next_page=has_next_page,
-            current_page=page,
-            items=PaginationItems(
-                count=len(content),
-                total=total_count,
-                per_page=page_size,
+        return (
+            Pagination(
+                last_visible_page=last_visible_page,
+                has_next_page=page < last_visible_page,
+                current_page=page,
+                items=PaginationItems(
+                    count=len(content),
+                    total=total_count,
+                    per_page=page_size,
+                ),
             ),
+            content,
         )
-
-        return pagination, content
 
     async def reset_stuck_in_progress_statuses(
         self, stuck_threshold_minutes: int = 10 * 60

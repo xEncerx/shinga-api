@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, Column, func, DateTime, Index
+from sqlmodel import SQLModel, Field, Column, func, DateTime, Index, text
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY, TSVECTOR
 from sqlalchemy import Enum as SQLEnum
 
@@ -169,6 +169,21 @@ class TitleDBModel(SQLModel, table=True):
             "ix_titles_search_vector_gin",
             "search_vector",
             postgresql_using="gin",
+        ),
+        # Partial composite index for search COUNT: type + rating (only active titles)
+        Index(
+            "ix_titles_type_rating",
+            "type",
+            text("rating DESC"),
+            postgresql_where=text("is_deleted = FALSE"),
+        ),
+        # Partial composite index for search COUNT: status + type + rating (only active titles)
+        Index(
+            "ix_titles_status_type_rating",
+            "status",
+            "type",
+            text("rating DESC"),
+            postgresql_where=text("is_deleted = FALSE"),
         ),
         # GIN index for trigram similarity search on search_text
         Index(
