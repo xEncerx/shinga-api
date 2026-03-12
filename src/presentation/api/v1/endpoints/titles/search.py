@@ -34,7 +34,7 @@ async def search_titles_endpoint(
         bookmark=request.bookmark,
         user_id=user.id if user else None,
         sort_by=request.sort_by,
-        order=request.order,
+        sort_order=request.sort_order,
         page=request.page,
         page_size=request.page_size,
     )

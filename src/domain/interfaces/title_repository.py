@@ -131,7 +131,7 @@ class ITitleRepository(ABC):
         bookmark: TitleBookmark | None = None,
         user_id: int | None = None,
         sort_by: TitleSortBy = TitleSortBy.RATING,
-        order: SortingOrder = SortingOrder.DESC,
+        sort_order: SortingOrder = SortingOrder.DESC,
         page: int = 1,
         page_size: int = 27,
     ) -> tuple[Pagination, list[tuple[TitleData, UserTitleData | None]]]:
@@ -151,7 +151,7 @@ class ITitleRepository(ABC):
             bookmark: Filter by user's bookmark status
             user_id: User ID for retrieving user-specific data and bookmark filter
             sort_by: Field to sort by
-            order: Sorting order (asc/desc)
+            sort_order: Sorting order (asc/desc)
             page: Page number (1-indexed)
             page_size: Items per page
 

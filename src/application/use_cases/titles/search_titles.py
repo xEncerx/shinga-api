@@ -49,7 +49,7 @@ class SearchTitlesUseCase:
         bookmark: TitleBookmark | None = None,
         user_id: int | None = None,
         sort_by: TitleSortBy = TitleSortBy.RATING,
-        order: SortingOrder = SortingOrder.DESC,
+        sort_order: SortingOrder = SortingOrder.DESC,
         page: int = 1,
         page_size: int = 27,
     ) -> SearchTitlesResult:
@@ -71,7 +71,7 @@ class SearchTitlesUseCase:
             bookmark=bookmark,
             user_id=user_id,
             sort_by=sort_by,
-            order=order,
+            sort_order=sort_order,
             page=page,
             page_size=page_size,
         )

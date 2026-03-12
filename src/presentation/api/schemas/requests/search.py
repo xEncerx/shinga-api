@@ -61,7 +61,7 @@ class TitleSearchRequest(BaseModel):
     )
 
     # Sorting Fields
-    order: SortingOrder = Field(
+    sort_order: SortingOrder = Field(
         default=SortingOrder.DESC, description="Sorting order (asc or desc)"
     )
     sort_by: TitleSortBy = Field(

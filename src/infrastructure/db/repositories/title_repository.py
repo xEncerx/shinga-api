@@ -295,7 +295,7 @@ class TitleRepository(ITitleRepository):
         bookmark: TitleBookmark | None = None,
         user_id: int | None = None,
         sort_by: TitleSortBy = TitleSortBy.RATING,
-        order: SortingOrder = SortingOrder.DESC,
+        sort_order: SortingOrder = SortingOrder.DESC,
         page: int = 1,
         page_size: int = 27,
     ) -> tuple[Pagination, list[tuple[TitleData, UserTitleData | None]]]:
@@ -378,7 +378,7 @@ class TitleRepository(ITitleRepository):
         if sort_by == TitleSortBy.UPDATED_AT and user_id is None:
             sort_column = TitleDBModel.released_at
 
-        if order == SortingOrder.ASC:
+        if sort_order == SortingOrder.ASC:
             stmt = stmt.order_by(sort_column.asc())  # type: ignore
         else:
             stmt = stmt.order_by(sort_column.desc())  # type: ignore
