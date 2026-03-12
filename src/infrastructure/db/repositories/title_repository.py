@@ -387,6 +387,9 @@ class TitleRepository(ITitleRepository):
                 func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
             )
 
+        # Tie-breaker for consistent pagination
+        stmt = stmt.order_by(TitleDBModel.id.asc())  # type: ignore
+
         # 6. Pagination — LIMIT applies without materializing all rows
         offset = (page - 1) * page_size
         stmt = stmt.offset(offset).limit(page_size)
