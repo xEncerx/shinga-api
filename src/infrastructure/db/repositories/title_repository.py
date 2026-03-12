@@ -374,10 +374,6 @@ class TitleRepository(ITitleRepository):
 
         # 5. Sorting
         sort_column = self._SORT_COLUMN_MAP.get(sort_by, TitleDBModel.rating)
-        if tsquery is not None:
-            stmt = stmt.order_by(
-                func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
-            )
 
         if sort_by == TitleSortBy.UPDATED_AT and user_id is None:
             sort_column = TitleDBModel.released_at
@@ -386,6 +382,10 @@ class TitleRepository(ITitleRepository):
             stmt = stmt.order_by(sort_column.asc())  # type: ignore
         else:
             stmt = stmt.order_by(sort_column.desc())  # type: ignore
+        if tsquery is not None:
+            stmt = stmt.order_by(
+                func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
+            )
 
         # 6. Pagination — LIMIT applies without materializing all rows
         offset = (page - 1) * page_size
