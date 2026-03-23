@@ -37,6 +37,10 @@ class TitleSimilarityScorer:
         if title_a.type != title_b.type:
             return 0.0
 
+        # If both have MAL ID and they differ, these are definitely not the same title
+        if title_a.mal_id and title_b.mal_id and title_a.mal_id != title_b.mal_id:
+            return 0.0
+
         # Names are blocking field - cannot compare without names
         names_a = self._collect_all_names(title_a)
         names_b = self._collect_all_names(title_b)
