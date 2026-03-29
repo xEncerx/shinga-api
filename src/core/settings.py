@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # Application metadata
     APP_NAME: str = "Shinga"
-    APP_VERSION: str = "0.1.1"
+    APP_VERSION: str = "0.1.2"
 
     # Api settings
     API_URL: str = "http://localhost:8000"
