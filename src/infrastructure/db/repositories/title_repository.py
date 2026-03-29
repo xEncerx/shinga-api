@@ -270,6 +270,24 @@ class TitleRepository(ITitleRepository):
         await self._session.exec(stmt)
         await self._session.flush()
 
+    async def unlink_raw_titles(self, raw_title_ids: list[int]) -> None:
+        if not raw_title_ids:
+            return
+
+        stmt = (
+            update(TitleRawDataDBModel)
+            .where(TitleRawDataDBModel.id.in_(raw_title_ids))  # type: ignore
+            .values(master_title_id=None)
+        )
+        await self._session.exec(stmt)
+        await self._session.flush()
+
+    async def delete_master_title(self, master_title_id: int) -> None:
+        title = await self._session.get(TitleDBModel, master_title_id)
+        if title:
+            await self._session.delete(title)
+            await self._session.flush()
+
     _SORT_COLUMN_MAP = {
         TitleSortBy.ID: TitleDBModel.id,
         TitleSortBy.RATING: TitleDBModel.rating,

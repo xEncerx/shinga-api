@@ -117,6 +117,16 @@ class ITitleRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def unlink_raw_titles(self, raw_title_ids: list[int]) -> None:
+        """Unlink raw titles from their master title."""
+        raise NotImplementedError
+
+    @abstractmethod
+    async def delete_master_title(self, master_title_id: int) -> None:
+        """Delete a master title from the database."""
+        raise NotImplementedError
+
+    @abstractmethod
     async def search_titles(
         self,
         query: str | None = None,
