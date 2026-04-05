@@ -1,6 +1,6 @@
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import update, select, func, text, and_
+from sqlmodel import update, select, func, text, and_, delete
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -287,6 +287,46 @@ class TitleRepository(ITitleRepository):
         if title:
             await self._session.delete(title)
             await self._session.flush()
+
+    async def merge_master_titles(self, target_id: int, source_id: int) -> None:
+        # 1. Update user_titles (ignore if user already has the target_id in list)
+        subq = select(UserTitlesDBModel.user_id).where(
+            UserTitlesDBModel.title_id == target_id
+        )
+
+        update_ut_stmt = (
+            update(UserTitlesDBModel)
+            .where(
+                and_(
+                    UserTitlesDBModel.title_id == source_id,
+                    UserTitlesDBModel.user_id.notin_(subq),  # type: ignore
+                )
+            )
+            .values(title_id=target_id)
+        )
+        await self._session.exec(update_ut_stmt)
+
+        # 2. Delete the rest of conflicting user_titles
+        del_ut_stmt = delete(UserTitlesDBModel).where(
+            UserTitlesDBModel.title_id == source_id  # type: ignore
+        )
+        await self._session.exec(del_ut_stmt)
+
+        # 3. Migrate titles_raw_data to target_id
+        update_raw_stmt = (
+            update(TitleRawDataDBModel)
+            .where(TitleRawDataDBModel.master_title_id == source_id)  # type: ignore
+            .values(master_title_id=target_id)
+        )
+        await self._session.exec(update_raw_stmt)
+
+        # 4. Delete the source master title
+        del_title_stmt = delete(TitleDBModel).where(
+            TitleDBModel.id == source_id  # type: ignore
+        )
+        await self._session.exec(del_title_stmt)
+
+        await self._session.flush()
 
     _SORT_COLUMN_MAP = {
         TitleSortBy.ID: TitleDBModel.id,

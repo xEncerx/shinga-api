@@ -2,7 +2,7 @@ from taskiq import Context, TaskiqDepends
 
 from typing import Annotated
 
-from src.application.use_cases import UpdateMasterTitleUseCase
+from src.application.use_cases import UpdateMasterTitleUseCase, MergeMasterTitlesUseCase
 from src.infrastructure.db.repositories import TitleRepository
 from src.infrastructure.tasks.broker import parsing_broker
 from src.core import logger
@@ -54,8 +54,12 @@ async def update_master_title_task(
 
     try:
         async with context.state.session_factory() as session:
+            repo = TitleRepository(session)
             use_case = UpdateMasterTitleUseCase(
-                title_repository=TitleRepository(session),
+                title_repository=repo,
+                title_merge_use_case=MergeMasterTitlesUseCase(
+                    title_repository=repo
+                ),
             )
 
             async with session.begin():

@@ -127,6 +127,11 @@ class ITitleRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def merge_master_titles(self, target_id: int, source_id: int) -> None:
+        """Merge a source master title into a target master title, including user progress and raw titles."""
+        raise NotImplementedError
+
+    @abstractmethod
     async def search_titles(
         self,
         query: str | None = None,

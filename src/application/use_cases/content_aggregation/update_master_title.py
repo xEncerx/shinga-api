@@ -1,17 +1,18 @@
 from src.domain.services import TitleMerger, TitleQualityScorer, TextNormalizer
+from src.application.use_cases import MergeMasterTitlesUseCase
 from src.domain.interfaces import ITitleRepository
-from src.domain.models.services import ConsolidationStatus
-from src.domain.models import TitleData
 
 
 class UpdateMasterTitleUseCase:
     def __init__(
         self,
         title_repository: ITitleRepository,
+        title_merge_use_case: MergeMasterTitlesUseCase,
         quality_scorer: TitleQualityScorer = TitleQualityScorer(),
         text_normalizer: TextNormalizer = TextNormalizer(),
     ) -> None:
         self._title_repository = title_repository
+        self._title_merge_use_case = title_merge_use_case
         self._quality_scorer = quality_scorer
         self._text_normalizer = text_normalizer
 
@@ -37,20 +38,13 @@ class UpdateMasterTitleUseCase:
                 mal_id=merged_title.mal_id
             )
             if existing_master and existing_master.id != master_title_id:
-                # Conflict found!
-                linked_raw_titles = await self._detach_problematic_titles(
-                    linked_raw_titles, merged_title.mal_id
+                # Conflict found! It means we have two master titles that belong to the same mal_id.
+                await self._title_merge_use_case.execute(
+                    target_id=existing_master.id,  # type: ignore
+                    source_id=master_title_id,
                 )
-                
-                # If no titles left after detaching, delete master
-                if not linked_raw_titles:
-                    await self._title_repository.delete_master_title(master_title_id)
-                    return
-
-                # Re-merge the remaining clean titles
-                merged_title = linked_raw_titles[0]
-                for raw_title in linked_raw_titles[1:]:
-                    merged_title = TitleMerger().merge(merged_title, raw_title)
+                # Stop processing current title. The system will update the merged title later.
+                return
 
         # 4. Update the master title in the repository
         await self._title_repository.update_master_title(
@@ -65,24 +59,3 @@ class UpdateMasterTitleUseCase:
             ),
             data_quality_score=self._quality_scorer.score(merged_title),
         )
-
-    async def _detach_problematic_titles(self, raw_titles: list[TitleData], conflicting_mal_id: int) -> list[TitleData]:
-        problematic_raw_titles = []
-        clean_raw_titles = []
-        for raw_title in raw_titles:
-            if raw_title.mal_id == conflicting_mal_id:
-                problematic_raw_titles.append(raw_title)
-            else:
-                clean_raw_titles.append(raw_title)
-
-        if problematic_raw_titles:
-            problematic_ids = [rt.id for rt in problematic_raw_titles if rt.id]
-            await self._title_repository.unlink_raw_titles(problematic_ids)
-            for rt_id in problematic_ids:
-                await self._title_repository.update_consolidation_status(
-                    raw_title_id=rt_id,
-                    status=ConsolidationStatus.PENDING,
-                    detail="Detached due to mal_id conflict"
-                )
-
-        return clean_raw_titles
