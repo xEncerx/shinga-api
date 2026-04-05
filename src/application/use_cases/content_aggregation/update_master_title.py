@@ -1,8 +1,17 @@
+from dataclasses import dataclass
+
 from src.application.use_cases.content_aggregation.merge_master_titles import (
     MergeMasterTitlesUseCase,
 )
 from src.domain.services import TitleMerger, TitleQualityScorer, TextNormalizer
 from src.domain.interfaces import ITitleRepository
+
+
+@dataclass
+class UpdateTitleResult:
+    updated: bool
+    is_merged: bool
+    merged_into_id: int | None = None
 
 
 class UpdateMasterTitleUseCase:
@@ -18,7 +27,7 @@ class UpdateMasterTitleUseCase:
         self._quality_scorer = quality_scorer
         self._text_normalizer = text_normalizer
 
-    async def execute(self, master_title_id: int) -> None:
+    async def execute(self, master_title_id: int) -> UpdateTitleResult:
         # 1. Retrieve all raw titles linked to the master title
         linked_raw_titles = await self._title_repository.get_raw_titles_by_master_id(
             master_title_id
@@ -27,7 +36,7 @@ class UpdateMasterTitleUseCase:
         if not linked_raw_titles:
             # No raw titles linked, delete the master title to clean up
             await self._title_repository.delete_master_title(master_title_id)
-            return
+            return UpdateTitleResult(is_merged=False, updated=False)
 
         # 2. Merge the raw titles into a single master title
         merged_title = linked_raw_titles[0]
@@ -46,7 +55,11 @@ class UpdateMasterTitleUseCase:
                     source_id=master_title_id,
                 )
                 # Stop processing current title. The system will update the merged title later.
-                return
+                return UpdateTitleResult(
+                    is_merged=True,
+                    merged_into_id=existing_master.id,
+                    updated=False,
+                )
 
         # 4. Update the master title in the repository
         await self._title_repository.update_master_title(
@@ -61,3 +74,4 @@ class UpdateMasterTitleUseCase:
             ),
             data_quality_score=self._quality_scorer.score(merged_title),
         )
+        return UpdateTitleResult(is_merged=True, updated=True)

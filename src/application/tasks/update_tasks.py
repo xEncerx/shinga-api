@@ -57,15 +57,20 @@ async def update_master_title_task(
             repo = TitleRepository(session)
             use_case = UpdateMasterTitleUseCase(
                 title_repository=repo,
-                title_merge_use_case=MergeMasterTitlesUseCase(
-                    title_repository=repo
-                ),
+                title_merge_use_case=MergeMasterTitlesUseCase(title_repository=repo),
             )
 
             async with session.begin():
-                await use_case.execute(master_title_id)
+                result = await use_case.execute(master_title_id)
 
-        logger.info("Updated master title ID={} successfully.", master_title_id)
+        if result.updated:
+            logger.info("Updated master title ID={} successfully.", master_title_id)
+        elif result.is_merged:
+            logger.info(
+                "Merged master title ID={} into ID={}.",
+                master_title_id,
+                result.merged_into_id,
+            )
     except Exception as e:
         logger.error(
             "Unexpected error updating master title ID={}: {}",
