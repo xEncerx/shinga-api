@@ -1,5 +1,7 @@
+from src.application.use_cases.content_aggregation.merge_master_titles import (
+    MergeMasterTitlesUseCase,
+)
 from src.domain.services import TitleMerger, TitleQualityScorer, TextNormalizer
-from src.application.use_cases import MergeMasterTitlesUseCase
 from src.domain.interfaces import ITitleRepository
 
 
