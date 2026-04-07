@@ -157,6 +157,7 @@ class TitleRepository(ITitleRepository):
             .where(
                 TitleRawDataDBModel.last_verified_at >= cutoff_time,
                 TitleRawDataDBModel.is_deleted == False,
+                TitleDBModel.is_deleted == False,
                 TitleDBModel.updated_at < TitleRawDataDBModel.last_verified_at,
                 TitleDBModel.id > last_id,  # type: ignore
             )
@@ -289,30 +290,33 @@ class TitleRepository(ITitleRepository):
             await self._session.flush()
 
     async def merge_master_titles(self, target_id: int, source_id: int) -> None:
-        # 1. Update user_titles (ignore if user already has the target_id in list)
+        # 1. Duplicate user_titles (ignore if user already has the target_id in list to avoid duplicates)
         subq = select(UserTitlesDBModel.user_id).where(
             UserTitlesDBModel.title_id == target_id
         )
 
-        update_ut_stmt = (
-            update(UserTitlesDBModel)
-            .where(
-                and_(
-                    UserTitlesDBModel.title_id == source_id,
-                    UserTitlesDBModel.user_id.notin_(subq),  # type: ignore
-                )
+        source_uts_stmt = select(UserTitlesDBModel).where(
+            and_(
+                UserTitlesDBModel.title_id == source_id,
+                UserTitlesDBModel.user_id.notin_(subq),  # type: ignore
             )
-            .values(title_id=target_id)
         )
-        await self._session.exec(update_ut_stmt)
+        source_uts = await self._session.exec(source_uts_stmt)
 
-        # 2. Delete the rest of conflicting user_titles
-        del_ut_stmt = delete(UserTitlesDBModel).where(
-            UserTitlesDBModel.title_id == source_id  # type: ignore
-        )
-        await self._session.exec(del_ut_stmt)
+        for row in source_uts.all():
+            new_ut = UserTitlesDBModel(
+                user_id=row.user_id,
+                title_id=target_id,
+                rating=row.rating,
+                current_url=row.current_url,
+                bookmark=row.bookmark,
+                is_favorite=row.is_favorite,
+                note=row.note,
+                extended_data=row.extended_data,
+            )
+            self._session.add(new_ut)
 
-        # 3. Migrate titles_raw_data to target_id
+        # 2. Migrate titles_raw_data to target_id
         update_raw_stmt = (
             update(TitleRawDataDBModel)
             .where(TitleRawDataDBModel.master_title_id == source_id)  # type: ignore
@@ -320,11 +324,13 @@ class TitleRepository(ITitleRepository):
         )
         await self._session.exec(update_raw_stmt)
 
-        # 4. Delete the source master title
-        del_title_stmt = delete(TitleDBModel).where(
-            TitleDBModel.id == source_id  # type: ignore
+        # 3. Soft-delete the source master title
+        soft_delete_title_stmt = (
+            update(TitleDBModel)
+            .where(TitleDBModel.id == source_id)  # type: ignore
+            .values(is_deleted=True)
         )
-        await self._session.exec(del_title_stmt)
+        await self._session.exec(soft_delete_title_stmt)
 
         await self._session.flush()
 
@@ -358,7 +364,7 @@ class TitleRepository(ITitleRepository):
         page_size: int = 27,
     ) -> tuple[Pagination, list[tuple[TitleData, UserTitleData | None]]]:
         tsquery = None
-        title_conditions = []
+        title_conditions = [TitleDBModel.is_deleted == False]
 
         # 1. Full-text search condition
         if query:
