@@ -1,6 +1,6 @@
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import update, select, func, text, and_, delete
+from sqlmodel import update, select, func, text, and_, delete, or_
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -239,17 +239,21 @@ class TitleRepository(ITitleRepository):
         if not tokens:
             return []
 
-        tsquery = " | ".join(tokens)
+        tsquery_str = " | ".join(tokens)
+        tsquery = func.to_tsquery("simple", tsquery_str)
         stmt = (
             select(
                 TitleDBModel,
-                func.ts_rank(
-                    TitleDBModel.search_vector,
-                    func.to_tsquery("simple", tsquery),
+                func.greatest(
+                    func.ts_rank(TitleDBModel.search_vector, tsquery),
+                    func.word_similarity(normalized_name, TitleDBModel.search_text)
                 ).label("rank"),
             )
             .where(
-                TitleDBModel.search_vector.op("@@")(func.to_tsquery("simple", tsquery))  # type: ignore
+                or_(
+                    TitleDBModel.search_vector.op("@@")(tsquery),  # type: ignore
+                    TitleDBModel.search_text.op("%>")(normalized_name)  # type: ignore
+                )
             )
             .order_by(text("rank DESC"))
             .limit(limit)
@@ -373,7 +377,10 @@ class TitleRepository(ITitleRepository):
                 tokens[-1] += ":*"
                 tsquery = func.to_tsquery("simple", " & ".join(tokens))
                 title_conditions.append(
-                    TitleDBModel.search_vector.op("@@")(tsquery)  # type: ignore
+                    or_(
+                        TitleDBModel.search_vector.op("@@")(tsquery),  # type: ignore
+                        TitleDBModel.search_text.op("%>")(query)  # type: ignore
+                    )
                 )
 
         # 2. Filters on TitleDBModel
@@ -448,7 +455,10 @@ class TitleRepository(ITitleRepository):
             stmt = stmt.order_by(sort_column.desc())  # type: ignore
         if tsquery is not None:
             stmt = stmt.order_by(
-                func.ts_rank(TitleDBModel.search_vector, tsquery).desc()
+                func.greatest(
+                    func.ts_rank(TitleDBModel.search_vector, tsquery),
+                    func.word_similarity(query, TitleDBModel.search_text)
+                ).desc()
             )
 
         # Tie-breaker for consistent pagination
