@@ -47,11 +47,11 @@ services:
       migrations:
         condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health/simple"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      interval: 1m
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 10s
     networks:
       - shinga-network
 
