@@ -26,8 +26,8 @@ def upgrade() -> None:
     op.execute("UPDATE titles SET status = 'ONGOING' WHERE status = 'LICENSED';")
     op.execute("""
         UPDATE titles_raw_data 
-        SET data = jsonb_set(data, '{status}', '"ONGOING"', false)
-        WHERE data->>'status' = 'LICENSED';
+        SET raw_data = jsonb_set(raw_data, '{status}', '"ONGOING"', false)
+        WHERE raw_data->>'status' = 'LICENSED';
     """)
     op.execute("ALTER TYPE titlestatus RENAME TO titlestatus_old;")
     op.execute(
