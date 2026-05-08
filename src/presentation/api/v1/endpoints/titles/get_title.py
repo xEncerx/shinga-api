@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Request
 
 from src.presentation.api.dependencies import GetTitleUseCaseDep, GetOptionalUserDep
 from src.presentation.api.decorators import map_domain_errors
 from src.presentation.api.schemas import errors as api_errors
+from src.presentation.api.dependencies.rate_limit import limiter
 from src.presentation.api.schemas.responses.titles import *
 from src.domain import errors as domain_errors
 
@@ -10,6 +11,7 @@ router = APIRouter(tags=["Get Titles"])
 
 
 @router.get("/{title_id}")
+@limiter.limit("45/minute")
 @map_domain_errors(
     {
         domain_errors.RecordNotFoundError: api_errors.TitleNotFound,
@@ -24,6 +26,7 @@ async def get_title_by_id_endpoint(
     *,
     use_case: GetTitleUseCaseDep,
     user: GetOptionalUserDep,
+    request: Request
 ) -> TitleDetailResponse:
     """
     Get title by ID with optional user-specific data.

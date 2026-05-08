@@ -1,17 +1,19 @@
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from typing import Annotated
 
 from src.presentation.api.dependencies.use_cases import AuthenticateUserUseCaseDep
 from src.presentation.api.schemas.responses.auth import AccessTokenResponse
 from src.presentation.api.decorators import map_domain_errors
 from src.presentation.api.schemas import errors as api_errors
+from src.presentation.api.dependencies.rate_limit import limiter
 from src.domain import errors as domain_errors
 
 router = APIRouter(prefix="/login", tags=["Login"])
 
 
 @router.post("/access-token")
+@limiter.limit("5/minute")
 @map_domain_errors(
     {
         domain_errors.MissingCredentialsError: api_errors.MissingCredentials,
@@ -21,6 +23,7 @@ router = APIRouter(prefix="/login", tags=["Login"])
 async def login_access_token_endpoint(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     use_case: AuthenticateUserUseCaseDep,
+    request: Request,
 ) -> AccessTokenResponse:
     """
     Login to get access token for authorized requests

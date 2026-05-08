@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from src.presentation.api.dependencies.rate_limit import limiter
 from src.domain.models.titles import (
     TitleGenre,
     TitleCategory,
@@ -18,7 +19,8 @@ router = APIRouter(
 
 
 @router.get("/genres")
-async def get_genres_endpoint() -> TitleGenresResponse:
+@limiter.limit("60/minute")
+async def get_genres_endpoint(request: Request) -> TitleGenresResponse:
     """Get list of available title genres"""
     genres = TitleGenresResponse(
         content=[
@@ -34,7 +36,8 @@ async def get_genres_endpoint() -> TitleGenresResponse:
 
 
 @router.get("/categories")
-async def get_categories_endpoint() -> TitleCategoriesResponse:
+@limiter.limit("60/minute")
+async def get_categories_endpoint(request: Request) -> TitleCategoriesResponse:
     """Get list of available title categories"""
     categories = TitleCategoriesResponse(
         content=[
@@ -50,7 +53,8 @@ async def get_categories_endpoint() -> TitleCategoriesResponse:
 
 
 @router.get("/statuses")
-async def get_statuses_endpoint() -> TitleStatusesResponse:
+@limiter.limit("60/minute")
+async def get_statuses_endpoint(request: Request) -> TitleStatusesResponse:
     """Get list of available title statuses"""
     statuses = TitleStatusesResponse(
         content=[
@@ -64,7 +68,8 @@ async def get_statuses_endpoint() -> TitleStatusesResponse:
 
 
 @router.get("/types")
-async def get_types_endpoint() -> TitleTypesResponse:
+@limiter.limit("60/minute")
+async def get_types_endpoint(request: Request) -> TitleTypesResponse:
     """Get list of available title types"""
     types = TitleTypesResponse(
         content=[
@@ -78,7 +83,8 @@ async def get_types_endpoint() -> TitleTypesResponse:
 
 
 @router.get("/bookmarks")
-async def get_bookmarks_endpoint() -> TitleBookmarksResponse:
+@limiter.limit("60/minute")
+async def get_bookmarks_endpoint(request: Request) -> TitleBookmarksResponse:
     """Get list of available title bookmarks"""
     bookmarks = TitleBookmarksResponse(
         content=[

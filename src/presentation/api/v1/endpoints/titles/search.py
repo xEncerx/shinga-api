@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from src.presentation.api.dependencies.rate_limit import limiter
 from src.presentation.api.schemas.responses import (
     TitleSearchResponse,
     TitleWithUserDataResponse,
@@ -16,27 +17,29 @@ router = APIRouter(prefix="/search", tags=["Search Titles"])
 
 
 @router.post("")
+@limiter.limit("45/minute")
 async def search_titles_endpoint(
-    request: TitleSearchRequest,
+    input: TitleSearchRequest,
     user: GetOptionalUserDep,
     use_case: SearchTitlesUseCaseDep,
+    request: Request,
 ) -> TitleSearchResponse:
     result = await use_case.execute(
-        query=request.query,
-        type=request.type,
-        status=request.status,
-        genres=request.genres,  # type: ignore
-        categories=request.categories,  # type: ignore
-        min_rating=request.min_rating,
-        max_rating=request.max_rating,
-        min_chapters=request.min_chapters,
-        max_chapters=request.max_chapters,
-        bookmark=request.bookmark,
+        query=input.query,
+        type=input.type,
+        status=input.status,
+        genres=input.genres,  # type: ignore
+        categories=input.categories,  # type: ignore
+        min_rating=input.min_rating,
+        max_rating=input.max_rating,
+        min_chapters=input.min_chapters,
+        max_chapters=input.max_chapters,
+        bookmark=input.bookmark,
         user_id=user.id if user else None,
-        sort_by=request.sort_by,
-        sort_order=request.sort_order,
-        page=request.page,
-        page_size=request.page_size,
+        sort_by=input.sort_by,
+        sort_order=input.sort_order,
+        page=input.page,
+        page_size=input.page_size,
     )
 
     return TitleSearchResponse(
