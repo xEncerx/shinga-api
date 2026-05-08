@@ -43,7 +43,6 @@ class TitleStatus(str, Enum):
     ONGOING = "ongoing"
     FINISHED = "finished"
     DISCONTINUED = "discontinued"
-    LICENSED = "licensed"
     FROZEN = "frozen"
     ANONS = "anons"
     UNKNOWN = "unknown"

@@ -255,5 +255,5 @@ class RemangaParser(BaseParser):
         "закончен": TitleStatus.FINISHED,
         "заморожен": TitleStatus.FROZEN,
         "анонс": TitleStatus.ANONS,
-        "лицензировано": TitleStatus.LICENSED,
+        "лицензировано": TitleStatus.ONGOING,
     }
