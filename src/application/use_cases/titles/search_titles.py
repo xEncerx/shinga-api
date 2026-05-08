@@ -4,7 +4,6 @@ from src.domain.interfaces import ITitleRepository
 from src.domain.services import TextNormalizer
 from src.domain.models import *
 
-
 __all__ = ["SearchTitlesUseCase"]
 
 
