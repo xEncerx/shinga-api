@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
     command: gunicorn src.presentation.api.app:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     env_file:
       - .env
     environment:
