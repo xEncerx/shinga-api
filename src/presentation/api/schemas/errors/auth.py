@@ -7,6 +7,7 @@ __all__ = [
     "InvalidTokenCredentials",
     "VerificationCodeNotFound",
     "InvalidVerificationCode",
+    "ForbiddenError",
 ]
 
 
@@ -46,3 +47,10 @@ class InvalidVerificationCode(BaseAPIException):
 
     status_code = status.HTTP_400_BAD_REQUEST
     details = ["Invalid verification code."]
+
+
+class ForbiddenError(BaseAPIException):
+    """Exception raised when user doesn't have required permissions."""
+
+    status_code = status.HTTP_403_FORBIDDEN
+    details = ["Insufficient permissions."]

@@ -10,7 +10,6 @@ from src.infrastructure.db.repositories import *
 from src.application.use_cases import *
 from src.core import settings
 
-
 __all__ = [
     "AuthenticateUserUseCaseDep",
     "RegisterUserUseCaseDep",
@@ -22,6 +21,7 @@ __all__ = [
     "ResetPasswordUseCaseDep",
     "VerifyPasswordResetCodeUseCaseDep",
     "UserStatisticsUseCaseDep",
+    "MergeTitlesUseCaseDep",
 ]
 
 
@@ -69,6 +69,14 @@ async def get_reset_password_use_case(
         code_storage=code_storage,
         password_hasher=password_hasher,
         password_validator=password_validator,
+    )
+
+
+async def get_merge_titles_use_case(
+    session: TransactionalSessionDep,
+) -> MergeMasterTitlesUseCase:
+    return MergeMasterTitlesUseCase(
+        title_repository=TitleRepository(session),
     )
 
 
@@ -170,6 +178,10 @@ RequestPasswordResetUseCaseDep = Annotated[
 ResetPasswordUseCaseDep = Annotated[
     ResetPasswordUseCase,
     Depends(get_reset_password_use_case),
+]
+MergeTitlesUseCaseDep = Annotated[
+    MergeMasterTitlesUseCase,
+    Depends(get_merge_titles_use_case),
 ]
 VerifyPasswordResetCodeUseCaseDep = Annotated[
     VerifyPasswordResetCodeUseCase,

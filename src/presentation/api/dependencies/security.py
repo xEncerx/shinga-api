@@ -1,15 +1,17 @@
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
-from typing import Annotated
+from typing import Annotated, Callable
 from fastapi import Depends
 
 from src.presentation.api.dependencies import TokenServiceDep, SessionDep
 from src.infrastructure.db.repositories import UserRepository
 from src.presentation.api.schemas.errors import *
 from src.domain.models.users import UserData
+from src.domain.models.users.enums import UserRole
 
-__all__ = ["GetUserDep", "GetOptionalUserDep"]
+__all__ = ["GetUserDep", "GetOptionalUserDep", "require_roles"]
+
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"api/v1/auth/login/access-token",
@@ -68,6 +70,19 @@ async def get_optional_user(
     return user
 
 
+# === Role checking dependency ===
+def require_roles(allowed_roles: list[UserRole]) -> Callable:
+    async def role_checker(
+        user: Annotated[UserData, Depends(get_user)],
+    ) -> UserData:
+        if user.role not in allowed_roles:
+            raise ForbiddenError()
+        return user
+
+    return role_checker
+
+
 # === Dependency Annotations ===
 GetUserDep = Annotated[UserData, Depends(get_user)]
 GetOptionalUserDep = Annotated[UserData | None, Depends(get_optional_user)]
+AdminOnlyDep = Annotated[UserData, Depends(require_roles([UserRole.ADMIN]))]
