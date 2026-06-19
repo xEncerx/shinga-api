@@ -1,4 +1,5 @@
 from src.infrastructure.sources.base_provider import BaseProvider
+from src.infrastructure.sources.source_headers_loader import SourceHeadersLoader
 from src.domain.models.source import Source
 
 from typing import Type
@@ -27,6 +28,7 @@ class SourceManager:
         providers: dict[Source, Type[BaseProvider]],
         base_proxy: str | None = None,
         base_timeout: float = 10,
+        headers_loader: SourceHeadersLoader | None = None,
     ) -> None:
         """
         Initialize the SourceManager with provider classes.
@@ -35,12 +37,14 @@ class SourceManager:
             providers (dict[Source, Type[BaseProvider]]): A mapping of Source enum to provider classes.
             base_proxy (str | None): Optional base proxy URL for all providers.
             base_timeout (float): Base timeout for all providers. Defaults to 10 seconds.
+            headers_loader (SourceHeadersLoader | None): Optional loader for per-source headers.
         """
         self._provider_classes = providers
 
         self._providers: dict[Source, BaseProvider] = {}
         self._base_proxy = base_proxy
         self._base_timeout = base_timeout
+        self._headers_loader = headers_loader
         self._initialized = False
 
     async def initialize(self) -> None:
@@ -50,9 +54,11 @@ class SourceManager:
             return
 
         for source, provider_class in self._provider_classes.items():
+            headers = self._headers_loader.load(source) if self._headers_loader else None
             provider = provider_class(
                 timeout=self._base_timeout,
                 proxy=self._base_proxy,
+                headers=headers,
             )
             await provider.__aenter__()
 

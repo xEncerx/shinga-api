@@ -18,13 +18,14 @@ class Settings(BaseSettings):
 
     # Application metadata
     APP_NAME: str = "Shinga"
-    APP_VERSION: str = "0.1.5"
+    APP_VERSION: str = "0.1.6"
 
     # Api settings
     API_URL: str = "http://localhost:8000"
 
     # Network settings
     PROXY: str | None = None
+    SOURCE_HEADERS_DIR: str = "config/source_headers"
 
     # Database settings
     POSTGRES_USER: str

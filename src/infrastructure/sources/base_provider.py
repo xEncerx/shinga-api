@@ -25,6 +25,7 @@ class BaseProvider(ABC, AsyncHttpClient):
         timeout: float = 10,
         disable_ssl: bool = False,
         proxy: str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         """
         Initialize the base provider.
@@ -35,13 +36,14 @@ class BaseProvider(ABC, AsyncHttpClient):
             timeout (float): Timeout for HTTP requests.
             disable_ssl (bool): Whether to disable SSL verification.
             proxy (str | None): Proxy URL if needed.
+            headers (dict[str, str] | None): Optional HTTP headers for every request.
         """
 
         limiter: AsyncLimiter | None = None
         if self.RATE_LIMIT_REQUESTS:
             limiter = AsyncLimiter(self.RATE_LIMIT_REQUESTS, self.RATE_LIMIT_PERIOD)
 
-        super().__init__(self.BASE_URL, timeout, disable_ssl, proxy, limiter)
+        super().__init__(self.BASE_URL, timeout, disable_ssl, proxy, limiter, headers)
 
     @abstractmethod
     async def get_by_id(self, external_id: str) -> SourceTitleData | None:

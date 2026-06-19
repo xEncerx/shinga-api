@@ -1,6 +1,6 @@
 from taskiq import TaskiqEvents, TaskiqState
 
-from src.infrastructure.sources import SourceManager, AVAILABLE_SOURCES
+from src.infrastructure.sources import SourceHeadersLoader, SourceManager, AVAILABLE_SOURCES
 from src.infrastructure.db.session import async_session, engine
 from src.infrastructure.email import SMTPEmailService
 from src.infrastructure.storage import LocalFileStorage
@@ -17,7 +17,9 @@ async def parsing_startup(state: TaskiqState) -> None:
 
     state.session_factory = async_session
     state.source_manager = SourceManager(
-        providers=AVAILABLE_SOURCES, base_proxy=settings.PROXY
+        providers=AVAILABLE_SOURCES,
+        base_proxy=settings.PROXY,
+        headers_loader=SourceHeadersLoader(settings.SOURCE_HEADERS_DIR),
     )
     state.cover_storage = LocalFileStorage(
         base_path=settings.STORAGE_BASE_PATH + settings.COVER_STORAGE_FOLDER,

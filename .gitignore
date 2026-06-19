@@ -1,10 +1,12 @@
 # Environment
 .env
 venv/
+config/source_headers/*.json
 
 # Cache
 __pycache__/
 temp/
+.pytest_cache/
 
 # Logs & backups
 logs/

@@ -45,6 +45,7 @@ class AsyncHttpClient:
         disable_ssl: bool = False,
         proxy: str | None = None,
         limiter: AsyncLimiter | None = None,
+        base_headers: dict[str, str] | None = None,
     ) -> None:
         """
         Initialize the AsyncHttpClient.
@@ -55,6 +56,7 @@ class AsyncHttpClient:
             disable_ssl: If True, disables SSL certificate verification. Defaults to False.
             proxy: Proxy server URL to use for requests. Defaults to None.
             limiter: An optional AsyncLimiter to limit the rate of requests. Defaults to None.
+            base_headers: Optional headers included in every request.
         """
         self._base_url = base_url
         self._timeout = ClientTimeout(total=timeout)
@@ -62,6 +64,7 @@ class AsyncHttpClient:
         self._disable_ssl = disable_ssl
         self._session: ClientSession | None = None
         self._limiter = limiter
+        self._base_headers = base_headers or {}
         try:
             from fake_useragent import UserAgent
 
@@ -104,10 +107,13 @@ class AsyncHttpClient:
         Raises:
             RuntimeError: If the session is not initialized.
         """
-        headers = kwargs.get("headers", {})
+        headers = {
+            **self._base_headers,
+            **(kwargs.get("headers") or {}),
+        }
         if "User-Agent" not in headers and "user-agent" not in headers:  # type: ignore
             headers["User-Agent"] = self._user_agent  # type: ignore
-            kwargs["headers"] = headers
+        kwargs["headers"] = headers
 
         coro = self.session.request(method, url, **kwargs).__aenter__()
         return RequestContextManager(coro, str(url), limiter=self._limiter)

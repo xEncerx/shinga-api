@@ -6,6 +6,7 @@ from .remanga import RemangaClient
 from .shikimori import ShikimoriClient
 from .base_provider import BaseProvider
 from .anilist import AniListClient
+from .source_headers_loader import SourceHeadersLoader
 
 # Import other source clients as needed
 
@@ -25,4 +26,5 @@ __all__ = [
     "AVAILABLE_SOURCES",
     "BaseProvider",
     "SourceManager",
+    "SourceHeadersLoader",
 ]
