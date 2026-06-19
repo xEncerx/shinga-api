@@ -4,7 +4,7 @@ from .parser import RemangaParser
 
 class RemangaClient(BaseProvider):
     BASE_URL = "https://api.remanga.org/api/"
-    RATE_LIMIT_REQUESTS = 2
+    RATE_LIMIT_REQUESTS = 1
     RATE_LIMIT_PERIOD = 1
 
     async def get_by_id(self, external_id: str) -> SourceTitleData | None:
