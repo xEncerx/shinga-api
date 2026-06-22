@@ -14,7 +14,7 @@ AVAILABLE_SOURCES = {
     Source.SHIKIMORI: ShikimoriClient,
     Source.MAL: MalClient,
     Source.REMANGA: RemangaClient,
-    Source.ANILIST: AniListClient,
+    # Source.ANILIST: AniListClient, // Temporarily removed due to API issues
     # Add other sources here
 }
 
