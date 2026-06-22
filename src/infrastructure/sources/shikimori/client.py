@@ -33,7 +33,7 @@ class ShikimoriClient(BaseProvider):
 	}
 	"""
 
-    BASE_URL = "https://shikimori.one/api/graphql/"
+    BASE_URL = "https://shikimori.io/api/graphql/"
     RATE_LIMIT_REQUESTS = 2
     RATE_LIMIT_PERIOD = 1
 
